@@ -52,7 +52,7 @@ var (
 	// default log level is info
 	//level = LevelDebug
 	//level = LevelInfo
-	level = LevelDebug
+	level = LevelWarn
 
 	// prefix for all messages, default is "[Gev]"
 	prefix = "[innodb_view]"

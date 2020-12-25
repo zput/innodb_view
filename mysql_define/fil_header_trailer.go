@@ -12,9 +12,6 @@ const (
 
 const FIL_PAGE_DATA = 38 /*!< start of the data on the page */
 
-
-
-
 /** 1.file page header 1-38 **/
 /** The byte offsets on a file page for various variables @{
  *  */
@@ -72,7 +69,6 @@ const FIL_PAGE_ARCH_LOG_NO_OR_SPACE_ID = 34
 
 const FIL_PAGE_SPACE_ID = FIL_PAGE_ARCH_LOG_NO_OR_SPACE_ID
 
-
 /** 2.page type value **/
 
 type T_FIL_PAGE_TYPE int
@@ -109,11 +105,12 @@ const (
 )
 
 var statusText = map[T_FIL_PAGE_TYPE]string{
-	FIL_PAGE_INDEX:           "index page",
-	FIL_PAGE_INODE:           "inode page(manger segment)",
-	FIL_PAGE_TYPE_ALLOCATED:  "freshly allocated page",
-	FIL_PAGE_TYPE_FSP_HDR:    "space head page",
-	FIL_PAGE_TYPE_XDES:       "XDES page",
+	FIL_PAGE_INDEX:          "INDEX page",
+	FIL_PAGE_INODE:          "INODE page(segment object)",
+	FIL_PAGE_TYPE_ALLOCATED: "Freshly allocated page",
+	FIL_PAGE_TYPE_FSP_HDR:   "File space header",
+	FIL_PAGE_TYPE_XDES:      "XDES page",
+	FIL_PAGE_IBUF_BITMAP:    "INSERT buffer bitmap page",
 }
 
 // StatusText returns a text for the HTTP status code. It returns the empty
@@ -121,7 +118,6 @@ var statusText = map[T_FIL_PAGE_TYPE]string{
 func StatusText(code T_FIL_PAGE_TYPE) string {
 	return statusText[code]
 }
-
 
 //...
 //...
