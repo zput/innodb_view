@@ -3,7 +3,6 @@ package mysql_define
 const FSEG_INODE_PAGE_NODE = 12 /* INODE页的链表节点，记录前后Inode Page的位置，
 BaseNode记录在头Page的FSP_SEG_INODES_FULL或者FSP_SEG_INODES_FREE字段。*/
 
-
 const INODE_ENTRY_SIZE = 192 /* this size is 192 for every inode entry(segment object)*/
 
 /*--------------------------- Inode Entry struct ---------------------------------------*/
