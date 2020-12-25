@@ -1,4 +1,4 @@
 github.com/spf13/pflag v1.0.5 h1:iy+VFUOCP1a+8yFto/drg2CJ5u0yRoB7fZw3DKv/JXA=
 github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
-github.com/zput/ringbuffer v0.0.4 h1:5YDSuW8NZ2h5zDyDP2RSVCwBjOx+iKRLSfs9VsBVLxs=
-github.com/zput/ringbuffer v0.0.4/go.mod h1:H66IuS8IfFE/6y3YIXfuVq0016ZvU0h/dTU+yi4ijMY=
+github.com/zput/ringbuffer v0.0.5 h1:XGccFpewu+VG6Qm10u5rfLTy9KW9ozA+j5Qx8tUM2uo=
+github.com/zput/ringbuffer v0.0.5/go.mod h1:H66IuS8IfFE/6y3YIXfuVq0016ZvU0h/dTU+yi4ijMY=

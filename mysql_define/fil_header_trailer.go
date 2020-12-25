@@ -10,7 +10,11 @@ const (
 	PAGE_SIZE_64_K
 )
 
+const FIL_NULL = 0xFFFFFFFF /*no PAGE_NEXT or PAGE_PREV */
+
 const FIL_PAGE_DATA = 38 /*!< start of the data on the page */
+
+const FIL_PAGE_TRAILER_BEFORE_SIZE = 16376
 
 /** 1.file page header 1-38 **/
 /** The byte offsets on a file page for various variables @{
@@ -63,7 +67,7 @@ const FIL_PAGE_FILE_FLUSH_LSN = 26 /*!< this is only defined for the
   FIL_PAGE_COMPRESSED pages, we store
   the compressed page control information
   in these 8 bytes. */
-const FIL_NULL = 0xFFFFFFFF /*no PAGE_NEXT or PAGE_PREV */
+
 /** starting from 4.1.x this contains the space id of the page */
 const FIL_PAGE_ARCH_LOG_NO_OR_SPACE_ID = 34
 
