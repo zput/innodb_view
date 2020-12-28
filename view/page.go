@@ -9,8 +9,13 @@ import (
 
 type ListBaseNode struct{
 	FlstLen uint32
-	First PageNoANDOffset
-	Last PageNoANDOffset
+	First *PageNoANDOffset
+	Last *PageNoANDOffset
+}
+
+type ListNode struct{
+	First *PageNoANDOffset
+	Last *PageNoANDOffset
 }
 
 type PageNoANDOffset struct{
@@ -37,8 +42,8 @@ func (f *PageParseFactory) Create(pageType mysql_define.T_FIL_PAGE_TYPE) IPagePa
 		return new(FileAllPage)
 	case mysql_define.FIL_PAGE_TYPE_FSP_HDR:
 		return new(FspHeaderPage)
-
 	case mysql_define.FIL_PAGE_INODE:
+		return new(INodePage)
 
 	case mysql_define.FIL_PAGE_INDEX:
 
@@ -213,35 +218,99 @@ func getListBaseNode(buffer *ringbuffer.RingBuffer)(*ListBaseNode, error){
 
 	var isUsingExplore = true
 	var listBaseNode ListBaseNode
+	var err error
 
 	listBaseNode.FlstLen = buffer.PeekUint32(isUsingExplore)
 	if err := buffer.ExploreRetrieve(mysql_define.PRV_PAGE_NODE); err != nil {
 		log.Error(err)
 		return nil, err
 	}
-	listBaseNode.First.PageNo = buffer.PeekUint32(isUsingExplore)
-	if err := buffer.ExploreRetrieve(mysql_define.PRV_OFFSET - mysql_define.PRV_PAGE_NODE); err != nil {
+
+	listBaseNode.First, err = getPageNoANDOffset(buffer, isUsingExplore)
+	if err != nil{
 		log.Error(err)
 		return nil, err
 	}
 
-	listBaseNode.First.Offset = buffer.PeekUint16(isUsingExplore)
-	if err := buffer.ExploreRetrieve(mysql_define.NEXT_PAGE_NODE - mysql_define.PRV_OFFSET); err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	listBaseNode.Last.PageNo = buffer.PeekUint32(isUsingExplore)
-	if err := buffer.ExploreRetrieve(mysql_define.NEXT_OFFSET - mysql_define.NEXT_PAGE_NODE); err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	listBaseNode.Last.Offset = buffer.PeekUint16(isUsingExplore)
-	if err := buffer.ExploreRetrieve(mysql_define.LIST_BASE_NODE_SIZE - mysql_define.NEXT_OFFSET); err != nil {
+	listBaseNode.Last, err = getPageNoANDOffset(buffer, isUsingExplore)
+	if err != nil{
 		log.Error(err)
 		return nil, err
 	}
 
 	return &listBaseNode, nil
+}
+
+func getPageNoANDOffset(buffer *ringbuffer.RingBuffer, isUsingExplore bool)(*PageNoANDOffset, error){
+
+	var listNode PageNoANDOffset
+
+	listNode.PageNo = buffer.PeekUint32(isUsingExplore)
+	if err := buffer.ExploreRetrieve(mysql_define.PRV_OFFSET - mysql_define.PRV_PAGE_NODE); err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	listNode.Offset = buffer.PeekUint16(isUsingExplore)
+	if err := buffer.ExploreRetrieve(mysql_define.NEXT_PAGE_NODE - mysql_define.PRV_OFFSET); err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	return &listNode, nil
+}
+
+func getINodeEntry(buffer *ringbuffer.RingBuffer, isUsingExplore bool)(INodeEntry, error){
+
+	var iNodeEntry INodeEntry
+	var err error
+
+	iNodeEntry.FSegID = buffer.PeekUint64(isUsingExplore)
+	if err := buffer.ExploreRetrieve(mysql_define.FSEG_ID); err != nil {
+		log.Error(err)
+		return iNodeEntry, err
+	}
+
+	iNodeEntry.FSegNotFullNUsed = buffer.PeekUint64(isUsingExplore)
+	if err := buffer.ExploreRetrieve(mysql_define.FSEG_NOT_FULL_N_USED); err != nil {
+		log.Error(err)
+		return iNodeEntry, err
+	}
+
+	if iNodeEntry.FSegFree, err = getListBaseNode(buffer); err != nil{
+		log.Error(err)
+		return iNodeEntry, err
+	}
+	if iNodeEntry.FSegNotFull, err = getListBaseNode(buffer); err != nil{
+		log.Error(err)
+		return iNodeEntry, err
+	}
+	if iNodeEntry.FSegFull, err = getListBaseNode(buffer); err != nil{
+		log.Error(err)
+		return iNodeEntry, err
+	}
+
+	iNodeEntry.FSegMagicN = buffer.PeekUint32(isUsingExplore)
+	if err := buffer.ExploreRetrieve(mysql_define.FSEG_MAGIC_N); err != nil {
+		log.Error(err)
+		return iNodeEntry, err
+	}
+
+	for i:=0; i<32;i++{
+		if iNodeEntry.FSegFragSlice[i], err = getFSegFragArr(buffer, isUsingExplore); err != nil{
+			log.Errorf("index[%d]; error[%v]", i, err)
+			return iNodeEntry, err
+		}
+	}
+
+	return iNodeEntry, nil
+}
+
+func getFSegFragArr(buffer *ringbuffer.RingBuffer, isUsingExplore bool)(fSegFrag uint32, err error){
+	fSegFrag = buffer.PeekUint32(isUsingExplore)
+	if err = buffer.ExploreRetrieve(mysql_define.FSEG_FRAG_ARR_I); err != nil {
+		log.Error(err)
+		return
+	}
+	return
 }

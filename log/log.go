@@ -61,7 +61,7 @@ var (
 type defaultLogLogger struct{}
 
 func (t *defaultLogLogger) Log(v ...interface{}) {
-	stdlog.Print(v...)
+	_ = stdlog.Output(5, fmt.Sprint(v...))
 }
 
 func (t *defaultLogLogger) Logf(format string, v ...interface{}) {
