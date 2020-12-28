@@ -23,6 +23,10 @@ type PageNoANDOffset struct{
 	Offset uint16
 }
 
+type TreeNode struct{
+	SpaceID uint32
+	NodePosition *PageNoANDOffset
+}
 //---------------------------------------------------------------------//
 
 type IPageParse interface {
@@ -44,9 +48,8 @@ func (f *PageParseFactory) Create(pageType mysql_define.T_FIL_PAGE_TYPE) IPagePa
 		return new(FspHeaderPage)
 	case mysql_define.FIL_PAGE_INODE:
 		return new(INodePage)
-
 	case mysql_define.FIL_PAGE_INDEX:
-
+		return new(IndexPage)
 	case mysql_define.FIL_PAGE_TYPE_XDES:
 
 	case mysql_define.FIL_PAGE_TYPE_ALLOCATED:
@@ -239,6 +242,27 @@ func getListBaseNode(buffer *ringbuffer.RingBuffer)(*ListBaseNode, error){
 	}
 
 	return &listBaseNode, nil
+}
+
+func getTreeNode(buffer *ringbuffer.RingBuffer)(*TreeNode, error){
+
+	var isUsingExplore = true
+	var treeNode TreeNode
+	var err error
+
+	treeNode.SpaceID = buffer.PeekUint32(isUsingExplore)
+	if err := buffer.ExploreRetrieve(mysql_define.FSEG_HDR_PAGE_NO - mysql_define.FSEG_HDR_SPACE); err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	treeNode.NodePosition, err = getPageNoANDOffset(buffer, isUsingExplore)
+	if err != nil{
+		log.Error(err)
+		return nil, err
+	}
+
+	return &treeNode, nil
 }
 
 func getPageNoANDOffset(buffer *ringbuffer.RingBuffer, isUsingExplore bool)(*PageNoANDOffset, error){

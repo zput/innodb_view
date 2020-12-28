@@ -34,9 +34,6 @@ const PAGE_INDEX_ID = 28 /* index id where the page belongs.
    page creation. */
 /*--------------Index Header---------------*/
 
-const FSEG_HEADER_SIZE = 10 /*!< Length of the file system
-  header, in bytes */
-
 /*-------------- FSEG Header ---------------*/
 const PAGE_BTR_SEG_LEAF = 36 /* file segment header for the leaf pages in
    a B-tree: defined only on the root page of a
@@ -51,6 +48,10 @@ const PAGE_BTR_SEG_TOP = (36 + FSEG_HEADER_SIZE) /* file segment header for the 
 const FSEG_HDR_SPACE = 0   /*!< space id of the inode */
 const FSEG_HDR_PAGE_NO = 4 /*!< page number of the inode */
 const FSEG_HDR_OFFSET = 8  /*!< byte offset of the inode */
+
+const FSEG_HEADER_SIZE = 10 /*!< Length of the file system
+  header, in bytes */
+
 
 // ??? TODO
 const PAGE_BTR_IBUF_FREE_LIST = PAGE_BTR_SEG_LEAF
