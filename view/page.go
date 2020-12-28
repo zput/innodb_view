@@ -58,14 +58,14 @@ func (f *PageParseFactory) Create(pageType mysql_define.T_FIL_PAGE_TYPE) IPagePa
 // ----------------- Fil header trailer ------------------------------------//
 
 type FileAllPage struct {
-	checksum                    uint32
-	Offset                      uint32
-	previousPage                uint32
-	nextPage                    uint32
-	lsnForLastPageModeification uint64
-	pageType                    uint16
-	flushLSN                    uint64 //(0 except space0 page0)
-	spaceID                     uint32
+	checksum                    uint32 `yaml:"checksum"`
+	Offset                      uint32 `yaml:"Offset"`
+	previousPage                uint32 `yaml:"previousPage"`
+	nextPage                    uint32 `yaml:"nextPage"`
+	lsnForLastPageModeification uint64 `yaml:"lsnForLastPageModeification"`
+	pageType                    uint16 `yaml:"pageType"`
+	flushLSN                    uint64 `yaml:"flushLSN"` //(0 except space0 page0) `yaml:"name"`
+	spaceID                     uint32 `yaml:"spaceID"`
 
 	//FIL_PAGE_SPACE_OR_CHKSUM = 0
 	//FIL_PAGE_OFFSET = 4
@@ -77,8 +77,8 @@ type FileAllPage struct {
 	//FIL_NULL = 0xFFFFFFFF /*no PAGE_NEXT or PAGE_PREV */
 	//FIL_PAGE_ARCH_LOG_NO_OR_SPACE_ID = 34
 
-	oldStyleChecksum uint32
-	lsn              uint32
+	oldStyleChecksum uint32 `yaml:"oldStyleChecksum"`
+	lsn              uint32 `yaml:"lsn"`
 	// FIL_PAGE_END_LSN_OLD_CHKSUM 8 byte
 
 }
@@ -297,10 +297,22 @@ func getINodeEntry(buffer *ringbuffer.RingBuffer, isUsingExplore bool)(INodeEntr
 	}
 
 	for i:=0; i<32;i++{
-		if iNodeEntry.FSegFragSlice[i], err = getFSegFragArr(buffer, isUsingExplore); err != nil{
+		var fSegFragTemp uint32
+
+		if fSegFragTemp, err = getFSegFragArr(buffer, isUsingExplore); err != nil{
 			log.Errorf("index[%d]; error[%v]", i, err)
 			return iNodeEntry, err
 		}
+		if fSegFragTemp == 0xffffffff{
+			log.Debug("all FSEG_FRAG_ARR_I object have showed in this segment object on INode page")
+			if err = buffer.ExploreRetrieve(mysql_define.FSEG_FRAG_ARR_I*(31-i)); err != nil {
+				log.Error(err)
+				return iNodeEntry, err
+			}
+			break
+		}
+
+		iNodeEntry.FSegFragSlice = append(iNodeEntry.FSegFragSlice, fSegFragTemp)
 	}
 
 	return iNodeEntry, nil

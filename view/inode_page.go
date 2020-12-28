@@ -1,27 +1,29 @@
 package view
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/zput/innodb_view/log"
 	"github.com/zput/innodb_view/mysql_define"
 	"github.com/zput/ringbuffer"
+	"gopkg.in/yaml.v2"
 )
 
 type INodePage struct{
-	FileAllPage
-	List ListNode
-	INodeEntrySlice [85]INodeEntry
+	FileAllPage `yaml:"FileAllPage"`
+	List ListNode `yaml:"List"`
+	INodeEntrySlice []INodeEntry `yaml:"INodeEntrySlice" json:"INodeEntrySlice,omitempty"`
+	//INodeEntrySlice [85]INodeEntry `yaml:"INodeEntrySlice" json:"INodeEntrySlice,omitempty"`
 }
 
 type INodeEntry struct{
-	FSegID uint64
-	FSegNotFullNUsed uint64
-	FSegFree *ListBaseNode
-	FSegNotFull *ListBaseNode
-	FSegFull *ListBaseNode
-	FSegMagicN uint32
-	FSegFragSlice [32]uint32
+	FSegID uint64 `yaml:"FSegID"`
+	FSegNotFullNUsed uint64 `yaml:"FSegNotFullNUsed"`
+	FSegFree *ListBaseNode `yaml:"FSegFree"`
+	FSegNotFull *ListBaseNode `yaml:"FSegNotFull"`
+	FSegFull *ListBaseNode `yaml:"FSegFull"`
+	FSegMagicN uint32 `yaml:"FSegMagicN"`
+	FSegFragSlice []uint32 `yaml:"FSegFragSlice" json:"FSegFragSlice,omitempty"`
+	//FSegFragSlice [32]uint32 `yaml:"FSegFragSlice"`
 }
 
 func (inp *INodePage) GetFileType()mysql_define.T_FIL_PAGE_TYPE{
@@ -29,7 +31,8 @@ func (inp *INodePage) GetFileType()mysql_define.T_FIL_PAGE_TYPE{
 }
 
 func (inp *INodePage) printPageType() error {
-	prettyFormat, err := json.MarshalIndent(inp, "", "    ")
+	//prettyFormat, err := json.MarshalIndent(inp, "", "    ")
+	prettyFormat, err := yaml.Marshal(inp)
 	if err != nil{
 		return err
 	}
@@ -90,10 +93,17 @@ func (inp *INodePage) PageParseBody(buffer *ringbuffer.RingBuffer) error {
 	}
 
 	for i:=0; i<85;i++{
-		if inp.INodeEntrySlice[i], err = getINodeEntry(buffer, isUsingExplore); err != nil{
+		var iNodeEntryTmp INodeEntry
+		if iNodeEntryTmp, err = getINodeEntry(buffer, isUsingExplore); err != nil{
 			log.Errorf("index[%d]; error[%v]", i, err)
 			return err
 		}
+		if iNodeEntryTmp.FSegID <= 0{
+			log.Debug("all segment object have showed in this INode page")
+			break
+		}
+
+		inp.INodeEntrySlice = append(inp.INodeEntrySlice, iNodeEntryTmp)
 	}
 
 	buffer.ExploreBreak()
