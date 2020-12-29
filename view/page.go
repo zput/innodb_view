@@ -31,8 +31,8 @@ type TreeNode struct{
 
 type IPageParse interface {
 	PageParseFILHeader(buffer *ringbuffer.RingBuffer) error
-	PageParseFILTailer(buffer *ringbuffer.RingBuffer) error
-	PageParseBody(buffer *ringbuffer.RingBuffer) error
+	PageParseFILTailer(buffer *ringbuffer.RingBuffer, pageSize mysql_define.PAGE_SIZE) error
+	PageParseBody(buffer *ringbuffer.RingBuffer, pageSize mysql_define.PAGE_SIZE) error
 	PrintPageType()error
 
 	GetFileType()mysql_define.T_FIL_PAGE_TYPE
@@ -188,13 +188,13 @@ func (fap *FileAllPage) PageParseFILHeader(buffer *ringbuffer.RingBuffer) error 
 	return nil
 }
 
-func (fap *FileAllPage) PageParseFILTailer(buffer *ringbuffer.RingBuffer) error {
+func (fap *FileAllPage) PageParseFILTailer(buffer *ringbuffer.RingBuffer, pageSize mysql_define.PAGE_SIZE) error {
 
 	var isUsingExplore = true
 
 	buffer.ExploreBegin()
 
-	if err := buffer.ExploreRetrieve(mysql_define.FIL_PAGE_TRAILER_BEFORE_SIZE); err != nil {
+	if err := buffer.ExploreRetrieve(int(pageSize) - mysql_define.FIL_PAGE_END_LSN_OLD_CHKSUM); err != nil {
 		log.Error(err)
 		return err
 	}
@@ -211,7 +211,7 @@ func (fap *FileAllPage) PageParseFILTailer(buffer *ringbuffer.RingBuffer) error 
 	return nil
 }
 
-func (fap *FileAllPage) PageParseBody(buffer *ringbuffer.RingBuffer) error {
+func (fap *FileAllPage) PageParseBody(buffer *ringbuffer.RingBuffer, pageSize mysql_define.PAGE_SIZE) error {
 	return nil
 }
 
@@ -348,5 +348,34 @@ func getFSegFragArr(buffer *ringbuffer.RingBuffer, isUsingExplore bool)(fSegFrag
 		log.Error(err)
 		return
 	}
+	return
+}
+
+func getRecord(buffer *ringbuffer.RingBuffer, isUsingExplore bool)(recordPtr *Record, err error){
+	recordPtr = new(Record)
+
+	InfoFlagsPlusNOwned := buffer.PeekUint8(isUsingExplore)
+	if err = buffer.ExploreRetrieve(mysql_define.InfoFlagsPlusNOwned); err != nil {
+		log.Error(err)
+		return
+	}
+	recordPtr.InfoFlags.DelFlag = (InfoFlagsPlusNOwned&0x20)>>5
+	recordPtr.InfoFlags.MinFlag = (InfoFlagsPlusNOwned&0x10)>>4
+	recordPtr.NOwned = InfoFlagsPlusNOwned&0x0F
+
+	HeapNoIsOrderPlusRecordType := buffer.PeekUint16(isUsingExplore)
+	if err = buffer.ExploreRetrieve(mysql_define.HeapNoPlusRecordType); err != nil {
+		log.Error(err)
+		return
+	}
+	recordPtr.HeapNoIsOrder = (HeapNoIsOrderPlusRecordType&0xFFF8)>>3
+	recordPtr.RecordType = HeapNoIsOrderPlusRecordType&0x7
+
+	nextRecord := buffer.PeekUint16(isUsingExplore)
+	if err = buffer.ExploreRetrieve(mysql_define.NextRecord); err != nil {
+		log.Error(err)
+		return
+	}
+	recordPtr.NextRecordOffsetRelative = int16(nextRecord)
 	return
 }

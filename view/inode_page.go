@@ -60,15 +60,15 @@ func (inp *INodePage) PageParseFILHeader(buffer *ringbuffer.RingBuffer) error {
 	return nil
 }
 
-func (inp *INodePage) PageParseFILTailer(buffer *ringbuffer.RingBuffer) error {
-	if err := inp.FileAllPage.PageParseFILTailer(buffer); err != nil{
+func (inp *INodePage) PageParseFILTailer(buffer *ringbuffer.RingBuffer, pageSize mysql_define.PAGE_SIZE) error {
+	if err := inp.FileAllPage.PageParseFILTailer(buffer, pageSize); err != nil{
 		return err
 	}
 
 	return nil
 }
 
-func (inp *INodePage) PageParseBody(buffer *ringbuffer.RingBuffer) error {
+func (inp *INodePage) PageParseBody(buffer *ringbuffer.RingBuffer, pageSize mysql_define.PAGE_SIZE) error {
 
 	var isUsingExplore = true
 	var err error

@@ -3,6 +3,12 @@ package mysql_define
 const PAGE_HEADER = FIL_PAGE_DATA /* index page header starts at this
    offset(除了页面的fil_header) */
 
+
+const INDEX_PAGE_HEADER_SIZE = 36
+const FSEG_HEADER_TOTAL_SIZE = 2*FSEG_HEADER_SIZE
+
+const INDEX_PAGE_BEFORE_RECORD = FIL_PAGE_DATA + INDEX_PAGE_HEADER_SIZE + FSEG_HEADER_TOTAL_SIZE
+
 /** 3.index page header 38-94 **/
 
 /*--------------Index Header---------------*/

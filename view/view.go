@@ -137,7 +137,6 @@ func (v *View) ScanPage() error {
 }
 
 func (v *View) ParsePage(pageNo int) error{
-	// TODO
 	// 1. check sum value, judge this page whether is correct.
 	// 2. file header, file trailer
 	// 3. file body {manger page, inode page, index page, freshly allocated page}
@@ -170,7 +169,7 @@ func (v *View) ParsePage(pageNo int) error{
 		return ErrPageParseFactory
 	}
 
-	pageObject.PageParseBody(v.buf)
+	pageObject.PageParseBody(v.buf, v.pageSize)
 	pageObject.PrintPageType()
 
 	return nil

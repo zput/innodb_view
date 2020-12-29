@@ -62,15 +62,15 @@ func (fhp *FspHeaderPage) PageParseFILHeader(buffer *ringbuffer.RingBuffer) erro
 	return nil
 }
 
-func (fhp *FspHeaderPage) PageParseFILTailer(buffer *ringbuffer.RingBuffer) error {
-	if err := fhp.FileAllPage.PageParseFILTailer(buffer); err != nil{
+func (fhp *FspHeaderPage) PageParseFILTailer(buffer *ringbuffer.RingBuffer, pageSize mysql_define.PAGE_SIZE) error {
+	if err := fhp.FileAllPage.PageParseFILTailer(buffer, pageSize); err != nil{
 		return err
 	}
 
 	return nil
 }
 
-func (fhp *FspHeaderPage) PageParseBody(buffer *ringbuffer.RingBuffer) error {
+func (fhp *FspHeaderPage) PageParseBody(buffer *ringbuffer.RingBuffer, pageSize mysql_define.PAGE_SIZE) error {
 
 	var isUsingExplore = true
 
