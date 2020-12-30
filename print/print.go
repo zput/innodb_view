@@ -3,6 +3,7 @@ package print
 import (
 	"github.com/modood/table"
 	"reflect"
+	"strings"
 )
 
 type foo func (t *PrintFormatT)
@@ -49,14 +50,15 @@ func Translate(obj interface{}) []PrintFormatT {
 	// Wrap the original in a reflect.Value
 	var original = reflect.ValueOf(obj)
 	var ret = make([]PrintFormatT, 0)
+	var currentPosition = 0
 
-	translateRecursive(0, "", &ret, original)
+	translateRecursive(&currentPosition, "", &ret, original)
 
 	// Remove the reflection wrapper
 	return ret
 }
 
-func translateRecursive(currentPosition int, prefix string, ret *[]PrintFormatT, original reflect.Value) {
+func translateRecursive(currentPositionPtr *int, prefix string, ret *[]PrintFormatT, original reflect.Value) {
 	switch original.Kind() {
 	// The first cases handle nested structures and translate them recursively
 
@@ -71,7 +73,7 @@ func translateRecursive(currentPosition int, prefix string, ret *[]PrintFormatT,
 			return
 		}
 
-		translateRecursive(currentPosition, prefix, ret, originalValue)
+		translateRecursive(currentPositionPtr, prefix, ret, originalValue)
 
 	// If it is an interface (which is very similar to a pointer), do basically the
 	// same as for the pointer. Though a pointer is not the same as an interface so
@@ -81,18 +83,18 @@ func translateRecursive(currentPosition int, prefix string, ret *[]PrintFormatT,
 		// Get rid of the wrapping interface
 		originalValue := original.Elem()
 
-		translateRecursive(currentPosition, prefix, ret, originalValue)
+		translateRecursive(currentPositionPtr, prefix, ret, originalValue)
 
 	// If it is a struct we translate each field
 	case reflect.Struct:
 		for i := 0; i < original.NumField(); i += 1 {
-			translateRecursive(currentPosition, prefix+"."+original.Type().Field(i).Tag.Get("self"), ret, original.Field(i))
+			translateRecursive(currentPositionPtr, strings.TrimPrefix(prefix+"."+original.Type().Field(i).Tag.Get("self"), "."), ret, original.Field(i))
 		}
 
 	// If it is a slice we create a new slice and translate each element
 	case reflect.Slice:
 		for i := 0; i < original.Len(); i += 1 {
-			translateRecursive(currentPosition, prefix, ret, original.Index(i))
+			translateRecursive(currentPositionPtr, prefix, ret, original.Index(i))
 		}
 
 	// Otherwise we cannot traverse anywhere so this finishes the the recursion
@@ -116,8 +118,8 @@ func translateRecursive(currentPosition int, prefix string, ret *[]PrintFormatT,
 
 	// And everything else will simply be taken from the original
 	default:
-		*ret = append(*ret, *ConstructPrintFormatT(SetPosition(currentPosition), SetName(prefix), SetValue(original)))
-		currentPosition += int(original.Type().Size())
+		*ret = append(*ret, *ConstructPrintFormatT(SetPosition(*currentPositionPtr), SetName(prefix), SetValue(original)))
+		*currentPositionPtr += int(original.Type().Size())
 	}
 
 }

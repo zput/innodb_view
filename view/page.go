@@ -8,24 +8,24 @@ import (
 )
 
 type ListBaseNode struct{
-	FlstLen uint32
-	First *PageNoANDOffset
-	Last *PageNoANDOffset
+	FlstLen uint32 `yaml:"FlstLen" self:"FlstLen"`
+	First *PageNoANDOffset `yaml:"First" self:"First"`
+	Last *PageNoANDOffset `yaml:"Last" self:"Last"`
 }
 
 type ListNode struct{
-	First *PageNoANDOffset
-	Last *PageNoANDOffset
+	First *PageNoANDOffset `yaml:"First" self:"First"`
+	Last *PageNoANDOffset `yaml:"Last" self:"Last"`
 }
 
 type PageNoANDOffset struct{
-	PageNo uint32
-	Offset uint16
+	PageNo uint32 `yaml:"PageNo" self:"PageNo"`
+	Offset uint16 `yaml:"Offset" self:"Offset"`
 }
 
 type TreeNode struct{
-	SpaceID uint32
-	NodePosition *PageNoANDOffset
+	SpaceID uint32 `yaml:"SpaceID" self:"SpaceID"`
+	NodePosition *PageNoANDOffset `yaml:"NodePosition" self:"NodePosition"`
 }
 //---------------------------------------------------------------------//
 
