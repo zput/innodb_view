@@ -40,8 +40,8 @@ type IPageParse interface {
 
 type PageParseFactory struct{}
 
-func (f *PageParseFactory) Create(pageType mysql_define.T_FIL_PAGE_TYPE) IPageParse {
-	switch pageType {
+func (f *PageParseFactory) Create(PageType mysql_define.T_FIL_PAGE_TYPE) IPageParse {
+	switch PageType {
 	case mysql_define.FIL_COMMON_HEADER_TAILER:
 		return new(FileAllPage)
 	case mysql_define.FIL_PAGE_TYPE_FSP_HDR:
@@ -61,14 +61,14 @@ func (f *PageParseFactory) Create(pageType mysql_define.T_FIL_PAGE_TYPE) IPagePa
 // ----------------- Fil header trailer ------------------------------------//
 
 type FileAllPage struct {
-	checksum                    uint32 `yaml:"checksum"`
-	Offset                      uint32 `yaml:"Offset"`
-	previousPage                uint32 `yaml:"previousPage"`
-	nextPage                    uint32 `yaml:"nextPage"`
-	lsnForLastPageModeification uint64 `yaml:"lsnForLastPageModeification"`
-	pageType                    uint16 `yaml:"pageType"`
-	flushLSN                    uint64 `yaml:"flushLSN"` //(0 except space0 page0) `yaml:"name"`
-	spaceID                     uint32 `yaml:"spaceID"`
+	Checksum                    uint32 `yaml:"Checksum" self:"Checksum"`
+	Offset                      uint32 `yaml:"Offset" self:"Offset"`
+	PreviousPage                uint32 `yaml:"PreviousPage" self:"PreviousPage"`
+	NextPage                    uint32 `yaml:"NextPage" self:"NextPage"`
+	LsnForLastPageModeification uint64 `yaml:"LsnForLastPageModeification" self:"LsnForLastPageModeification"`
+	PageType                    uint16 `yaml:"PageType" self:"PageType"`
+	FlushLSN                    uint64 `yaml:"FlushLSN" self:"FlushLSN"` //(0 except space0 page0) `yaml:"name" self:"name"`
+	SpaceID                     uint32 `yaml:"SpaceID" self:"SpaceID"`
 
 	//FIL_PAGE_SPACE_OR_CHKSUM = 0
 	//FIL_PAGE_OFFSET = 4
@@ -80,22 +80,22 @@ type FileAllPage struct {
 	//FIL_NULL = 0xFFFFFFFF /*no PAGE_NEXT or PAGE_PREV */
 	//FIL_PAGE_ARCH_LOG_NO_OR_SPACE_ID = 34
 
-	oldStyleChecksum uint32 `yaml:"oldStyleChecksum"`
-	lsn              uint32 `yaml:"lsn"`
+	OldStyleChecksum uint32 `yaml:"OldStyleChecksum" self:"OldStyleChecksum"`
+	Lsn              uint32 `yaml:"Lsn" self:"Lsn"`
 	// FIL_PAGE_END_LSN_OLD_CHKSUM 8 byte
 
 }
 
 func (fap *FileAllPage) GetFileType()mysql_define.T_FIL_PAGE_TYPE{
-	return mysql_define.T_FIL_PAGE_TYPE(fap.pageType)
+	return mysql_define.T_FIL_PAGE_TYPE(fap.PageType)
 }
 
 func (fap *FileAllPage) printPageType() error {
-	log.Debugf("page type value:%d", fap.pageType)
+	log.Debugf("page type value:%d", fap.PageType)
 
 	pageNumber := fap.Offset
 
-	switch mysql_define.T_FIL_PAGE_TYPE(fap.pageType) {
+	switch mysql_define.T_FIL_PAGE_TYPE(fap.PageType) {
 
 	case mysql_define.FIL_PAGE_TYPE_FSP_HDR:
 		fmt.Printf("page number:[%d]; page type:[%s]\n", pageNumber, mysql_define.StatusText(mysql_define.FIL_PAGE_TYPE_FSP_HDR))
@@ -134,7 +134,7 @@ func (fap *FileAllPage) PageParseFILHeader(buffer *ringbuffer.RingBuffer) error 
 
 	// TODO optimize this handler error
 	// FIL_PAGE_OFFSET
-	fap.checksum = buffer.PeekUint32(isUsingExplore)
+	fap.Checksum = buffer.PeekUint32(isUsingExplore)
 	if err := buffer.ExploreRetrieve(mysql_define.FIL_PAGE_OFFSET); err != nil {
 		log.Error(err)
 		return err
@@ -146,37 +146,37 @@ func (fap *FileAllPage) PageParseFILHeader(buffer *ringbuffer.RingBuffer) error 
 		return err
 	}
 
-	fap.previousPage = buffer.PeekUint32(isUsingExplore)
+	fap.PreviousPage = buffer.PeekUint32(isUsingExplore)
 	if err := buffer.ExploreRetrieve(mysql_define.FIL_PAGE_NEXT - mysql_define.FIL_PAGE_PREV); err != nil {
 		log.Error(err)
 		return err
 	}
 
-	fap.nextPage = buffer.PeekUint32(isUsingExplore)
+	fap.NextPage = buffer.PeekUint32(isUsingExplore)
 	if err := buffer.ExploreRetrieve(mysql_define.FIL_PAGE_LSN - mysql_define.FIL_PAGE_NEXT); err != nil {
 		log.Error(err)
 		return err
 	}
 
-	fap.lsnForLastPageModeification = buffer.PeekUint64(isUsingExplore)
+	fap.LsnForLastPageModeification = buffer.PeekUint64(isUsingExplore)
 	if err := buffer.ExploreRetrieve(mysql_define.FIL_PAGE_TYPE - mysql_define.FIL_PAGE_LSN); err != nil {
 		log.Error(err)
 		return err
 	}
 
-	fap.pageType = buffer.PeekUint16(isUsingExplore)
+	fap.PageType = buffer.PeekUint16(isUsingExplore)
 	if err := buffer.ExploreRetrieve(mysql_define.FIL_PAGE_FILE_FLUSH_LSN - mysql_define.FIL_PAGE_TYPE); err != nil {
 		log.Error(err)
 		return err
 	}
 
-	fap.flushLSN = buffer.PeekUint64(isUsingExplore)
+	fap.FlushLSN = buffer.PeekUint64(isUsingExplore)
 	if err := buffer.ExploreRetrieve(mysql_define.FIL_PAGE_ARCH_LOG_NO_OR_SPACE_ID - mysql_define.FIL_PAGE_FILE_FLUSH_LSN); err != nil {
 		log.Error(err)
 		return err
 	}
 
-	fap.spaceID = buffer.PeekUint32(isUsingExplore)
+	fap.SpaceID = buffer.PeekUint32(isUsingExplore)
 	if err := buffer.ExploreRetrieve(mysql_define.FIL_PAGE_DATA - mysql_define.FIL_PAGE_ARCH_LOG_NO_OR_SPACE_ID); err != nil {
 		log.Error(err)
 		return err
@@ -198,13 +198,13 @@ func (fap *FileAllPage) PageParseFILTailer(buffer *ringbuffer.RingBuffer, pageSi
 		log.Error(err)
 		return err
 	}
-	fap.oldStyleChecksum = buffer.PeekUint32(isUsingExplore)
+	fap.OldStyleChecksum = buffer.PeekUint32(isUsingExplore)
 	if err := buffer.ExploreRetrieve(mysql_define.FIL_PAGE_END_LSN_OLD_CHKSUM/2); err != nil {
 		log.Error(err)
 		return err
 	}
 
-	fap.lsn = buffer.PeekUint32(isUsingExplore)
+	fap.Lsn = buffer.PeekUint32(isUsingExplore)
 
 	buffer.ExploreBreak()
 

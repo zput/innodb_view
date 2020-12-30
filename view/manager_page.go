@@ -30,7 +30,7 @@ type FspHeaderPage struct{
 }
 
 func (fhp *FspHeaderPage) GetFileType()mysql_define.T_FIL_PAGE_TYPE{
-	return mysql_define.T_FIL_PAGE_TYPE(fhp.FileAllPage.pageType)
+	return mysql_define.T_FIL_PAGE_TYPE(fhp.FileAllPage.PageType)
 }
 
 func (fhp *FspHeaderPage) printPageType() error {

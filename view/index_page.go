@@ -3,32 +3,34 @@ package view
 import (
 	"fmt"
 	"github.com/zput/innodb_view/log"
+	"github.com/zput/innodb_view/print"
 	"github.com/zput/innodb_view/mysql_define"
 	"github.com/zput/ringbuffer"
-	"gopkg.in/yaml.v2"
+	//"gopkg.in/yaml.v2"
+	"github.com/naoina/toml"
 )
 
 type IndexPage struct{
-	FileAllPage `yaml:"FileAllPage"`
+	FileAllPage `yaml:"FileAllPage" self:"FileAllPage"`
 
-	NDirSlots uint16  `yaml:"NDirSlots"`
-	HeapTop uint16 `yaml:"HeapTop"`
-	NHeap uint16 `yaml:"NHeap"`
-	Free uint16 `yaml:"Free"`
-	Garbage uint16 `yaml:"Garbage"`
-	LastInsert uint16 `yaml:"LastInsert"`
-	Direction uint16 `yaml:"Direction"`
-	NDirection uint16 `yaml:"NDirection"`
-	NRecs uint16 `yaml:"NRecs"`
-	MaxTrxID uint64 `yaml:"MaxTrxID"`
-	Level uint16 `yaml:"Level"`
-	IndexID uint64 `yaml:"IndexID"`
+	NDirSlots uint16  `yaml:"NDirSlots" self:"NDirSlots"`
+	HeapTop uint16 `yaml:"HeapTop" self:"HeapTop"`
+	NHeap uint16 `yaml:"NHeap" self:"NHeap"`
+	Free uint16 `yaml:"Free" self:"Free"`
+	Garbage uint16 `yaml:"Garbage" self:"Garbage"`
+	LastInsert uint16 `yaml:"LastInsert" self:"LastInsert"`
+	Direction uint16 `yaml:"Direction" self:"Direction"`
+	NDirection uint16 `yaml:"NDirection" self:"NDirection"`
+	NRecs uint16 `yaml:"NRecs" self:"NRecs"`
+	MaxTrxID uint64 `yaml:"MaxTrxID" self:"MaxTrxID"`
+	Level uint16 `yaml:"Level" self:"Level"`
+	IndexID uint64 `yaml:"IndexID" self:"IndexID"`
 
-	LeafNode *TreeNode  `yaml:"LeafNode"`
-	NoLeafNode *TreeNode `yaml:"NoLeafNode"`
+	LeafNode *TreeNode  `yaml:"LeafNode" self:"LeafNode"`
+	NoLeafNode *TreeNode `yaml:"NoLeafNode" self:"NoLeafNode"`
 
-	RecordSlice []*Record `yaml:"RecordSlice"`
-	PageDirectorySlice []PageDirectoryElement `yaml:"PageDirectorySlice"`
+	RecordSlice []*Record `yaml:"RecordSlice" self:"RecordSlice"`
+	PageDirectorySlice []PageDirectoryElement `yaml:"PageDirectorySlice" self:"PageDirectorySlice"`
 }
 
 type Record struct{
@@ -36,34 +38,35 @@ type Record struct{
 	// Nullable field bitmap (1bit per nullable field) //不定长
 
 	// ------------- 5 byte always ------------------------
-	InfoFlags InfoFlagsT `yaml:"InfoFlags"` // 4 bits
-	NOwned uint8 `yaml:"NOwned"`// 4 bits
-	HeapNoIsOrder uint16 `yaml:"HeapNoIsOrder"`// 13 bits
-	RecordType uint16 `yaml:"RecordType"`// 3 bits
-	NextRecordOffsetRelative int16 `yaml:"NextRecordOffsetRelative"`// 2 byte
+	InfoFlags InfoFlagsT `yaml:"InfoFlags" self:"InfoFlags"` // 4 bits
+	NOwned uint8 `yaml:"NOwned" self:"NOwned"`// 4 bits
+	HeapNoIsOrder uint16 `yaml:"HeapNoIsOrder" self:"HeapNoIsOrder"`// 13 bits
+	RecordType uint16 `yaml:"RecordType" self:"RecordType"`// 3 bits
+	NextRecordOffsetRelative int16 `yaml:"NextRecordOffsetRelative" self:"NextRecordOffsetRelative"`// 2 byte
 }
 
 type InfoFlagsT struct {
 	// total (4 bits)
 	// saved flag // 1 bit
 	// saved flag // 1 bit
-	DelFlag uint8 `yaml:"DelFlag"`// 1 bit
-	MinFlag uint8 `yaml:"MinFlag"`// 1 bit
+	DelFlag uint8 `yaml:"DelFlag" self:"DelFlag"`// 1 bit
+	MinFlag uint8 `yaml:"MinFlag" self:"MinFlag"`// 1 bit
 }
 
 type PageDirectoryElement struct{
-	DirectorySlot uint16 `yaml:"DirectorySlot"` // 2 byte
+	DirectorySlot uint16 `yaml:"DirectorySlot" self:"DirectorySlot"` // 2 byte
 
-	NOwned uint8 `yaml:"NOwned"`// 此处物理没有对应的。它实际在record里面
+	NOwned uint8 `yaml:"NOwned" self:"NOwned"`// 此处物理没有对应的。它实际在record里面
 }
 
 func (ip *IndexPage) GetFileType()mysql_define.T_FIL_PAGE_TYPE{
-	return mysql_define.T_FIL_PAGE_TYPE(ip.FileAllPage.pageType)
+	return mysql_define.T_FIL_PAGE_TYPE(ip.FileAllPage.PageType)
 }
 
 func (ip *IndexPage) printPageType() error {
 	//prettyFormat, err := json.MarshalIndent(ip, "", "    ")
-	prettyFormat, err := yaml.Marshal(ip)
+	//prettyFormat, err := yaml.Marshal(ip)
+	prettyFormat, err := toml.Marshal(ip)
 	if err != nil{
 		return err
 	}
@@ -71,7 +74,18 @@ func (ip *IndexPage) printPageType() error {
 	return nil
 }
 
+func (ip *IndexPage) generateHumanFormat() error {
+
+	fmt.Printf("%s\n", print.PrintFun(print.Translate(ip)))
+	return nil
+}
+
 func (ip *IndexPage) PrintPageType() error {
+
+	ip.generateHumanFormat()
+
+	fmt.Println()
+
 	ip.printPageType()
 
 	if err := ip.FileAllPage.PrintPageType(); err != nil{

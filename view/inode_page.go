@@ -27,7 +27,7 @@ type INodeEntry struct{
 }
 
 func (inp *INodePage) GetFileType()mysql_define.T_FIL_PAGE_TYPE{
-	return mysql_define.T_FIL_PAGE_TYPE(inp.FileAllPage.pageType)
+	return mysql_define.T_FIL_PAGE_TYPE(inp.FileAllPage.PageType)
 }
 
 func (inp *INodePage) printPageType() error {
