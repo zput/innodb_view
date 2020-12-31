@@ -231,6 +231,8 @@ func (fap *FileAllPage) generateHumanFormatTrailer() []print.PrintFormatT {
 	waitPrintT = append(waitPrintT, *print.NewPrintFormatT(print.PrintDivideSignBlock, "FILE TRAILER"))
 	waitPrintT = append(waitPrintT, print.Translate(&currentPosition, fap.FileTrailer)...)
 
+	waitPrintT = append(waitPrintT, *print.NewPrintFormatT(print.PrintDivideSignTrailer, ""))
+
 	return waitPrintT
 }
 

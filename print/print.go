@@ -49,21 +49,27 @@ type PrintDivideSign int
 const (
 	PrintDivideSignBlock = iota
 	PrintDivideSignBlank
+	PrintDivideSignTrailer
 )
 
 func NewPrintFormatT(sign PrintDivideSign, name string) *PrintFormatT {
 
-	var splitSign = ""
+	var headSplitSign = ""
+	var trailSplitSign = ""
 	var nameSign = ""
 
 	switch sign {
 	case PrintDivideSignBlock:
-		splitSign = "**************"
+		headSplitSign = "**************"
+		trailSplitSign = "**************"
 		nameSign = fmt.Sprintf("**************%s**************", name)
 	case PrintDivideSignBlank:
+
+	case PrintDivideSignTrailer:
+		headSplitSign = "N+8"
 	}
 
-	return ConstructPrintFormatT(SetPositionString(splitSign), SetName(nameSign), SetValue(splitSign))
+	return ConstructPrintFormatT(SetPositionString(headSplitSign), SetName(nameSign), SetValue(trailSplitSign))
 }
 
 // Output to stdout
