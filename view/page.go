@@ -4,38 +4,40 @@ import (
 	"fmt"
 	"github.com/zput/innodb_view/log"
 	"github.com/zput/innodb_view/mysql_define"
+	"github.com/zput/innodb_view/print"
 	"github.com/zput/ringbuffer"
 )
 
-type ListBaseNode struct{
-	FlstLen uint32 `yaml:"FlstLen" self:"FlstLen"`
-	First *PageNoANDOffset `yaml:"First" self:"First"`
-	Last *PageNoANDOffset `yaml:"Last" self:"Last"`
+type ListBaseNode struct {
+	FlstLen uint32           `yaml:"FlstLen" self:"FlstLen"`
+	First   *PageNoANDOffset `yaml:"First" self:"First"`
+	Last    *PageNoANDOffset `yaml:"Last" self:"Last"`
 }
 
-type ListNode struct{
+type ListNode struct {
 	First *PageNoANDOffset `yaml:"First" self:"First"`
-	Last *PageNoANDOffset `yaml:"Last" self:"Last"`
+	Last  *PageNoANDOffset `yaml:"Last" self:"Last"`
 }
 
-type PageNoANDOffset struct{
+type PageNoANDOffset struct {
 	PageNo uint32 `yaml:"PageNo" self:"PageNo"`
 	Offset uint16 `yaml:"Offset" self:"Offset"`
 }
 
-type TreeNode struct{
-	SpaceID uint32 `yaml:"SpaceID" self:"SpaceID"`
+type TreeNode struct {
+	SpaceID      uint32           `yaml:"SpaceID" self:"SpaceID"`
 	NodePosition *PageNoANDOffset `yaml:"NodePosition" self:"NodePosition"`
 }
+
 //---------------------------------------------------------------------//
 
 type IPageParse interface {
 	PageParseFILHeader(buffer *ringbuffer.RingBuffer) error
 	PageParseFILTailer(buffer *ringbuffer.RingBuffer, pageSize mysql_define.PAGE_SIZE) error
 	PageParseBody(buffer *ringbuffer.RingBuffer, pageSize mysql_define.PAGE_SIZE) error
-	PrintPageType()error
+	PrintPageType() error
 
-	GetFileType()mysql_define.T_FIL_PAGE_TYPE
+	GetFileType() mysql_define.T_FIL_PAGE_TYPE
 }
 
 type PageParseFactory struct{}
@@ -61,15 +63,11 @@ func (f *PageParseFactory) Create(PageType mysql_define.T_FIL_PAGE_TYPE) IPagePa
 // ----------------- Fil header trailer ------------------------------------//
 
 type FileAllPage struct {
-	Checksum                    uint32 `yaml:"Checksum" self:"Checksum"`
-	Offset                      uint32 `yaml:"Offset" self:"Offset"`
-	PreviousPage                uint32 `yaml:"PreviousPage" self:"PreviousPage"`
-	NextPage                    uint32 `yaml:"NextPage" self:"NextPage"`
-	LsnForLastPageModeification uint64 `yaml:"LsnForLastPageModeification" self:"LsnForLastPageModeification"`
-	PageType                    uint16 `yaml:"PageType" self:"PageType"`
-	FlushLSN                    uint64 `yaml:"FlushLSN" self:"FlushLSN"` //(0 except space0 page0) `yaml:"name" self:"name"`
-	SpaceID                     uint32 `yaml:"SpaceID" self:"SpaceID"`
+	FileHeader  `yaml:"FileHeader" self:""`
+	FileTrailer `yaml:"FileTrailer" self:""`
+}
 
+type FileHeader struct {
 	//FIL_PAGE_SPACE_OR_CHKSUM = 0
 	//FIL_PAGE_OFFSET = 4
 	//FIL_PAGE_PREV = 8
@@ -80,50 +78,24 @@ type FileAllPage struct {
 	//FIL_NULL = 0xFFFFFFFF /*no PAGE_NEXT or PAGE_PREV */
 	//FIL_PAGE_ARCH_LOG_NO_OR_SPACE_ID = 34
 
+	Checksum                    uint32 `yaml:"Checksum" self:"Checksum"`
+	Offset                      uint32 `yaml:"Offset" self:"Offset"`
+	PreviousPage                uint32 `yaml:"PreviousPage" self:"PreviousPage"`
+	NextPage                    uint32 `yaml:"NextPage" self:"NextPage"`
+	LsnForLastPageModeification uint64 `yaml:"LsnForLastPageModeification" self:"LsnForLastPageModeification"`
+	PageType                    uint16 `yaml:"PageType" self:"PageType"`
+	FlushLSN                    uint64 `yaml:"FlushLSN" self:"FlushLSN"` //(0 except space0 page0) `yaml:"name" self:"name"`
+	SpaceID                     uint32 `yaml:"SpaceID" self:"SpaceID"`
+}
+
+type FileTrailer struct {
+	// FIL_PAGE_END_LSN_OLD_CHKSUM 8 byte
 	OldStyleChecksum uint32 `yaml:"OldStyleChecksum" self:"OldStyleChecksum"`
 	Lsn              uint32 `yaml:"Lsn" self:"Lsn"`
-	// FIL_PAGE_END_LSN_OLD_CHKSUM 8 byte
-
 }
 
-func (fap *FileAllPage) GetFileType()mysql_define.T_FIL_PAGE_TYPE{
+func (fap *FileAllPage) GetFileType() mysql_define.T_FIL_PAGE_TYPE {
 	return mysql_define.T_FIL_PAGE_TYPE(fap.PageType)
-}
-
-func (fap *FileAllPage) printPageType() error {
-	log.Debugf("page type value:%d", fap.PageType)
-
-	pageNumber := fap.Offset
-
-	switch mysql_define.T_FIL_PAGE_TYPE(fap.PageType) {
-
-	case mysql_define.FIL_PAGE_TYPE_FSP_HDR:
-		fmt.Printf("page number:[%d]; page type:[%s]\n", pageNumber, mysql_define.StatusText(mysql_define.FIL_PAGE_TYPE_FSP_HDR))
-
-	case mysql_define.FIL_PAGE_INODE:
-		fmt.Printf("page number:[%d]; page type:[%s]\n", pageNumber, mysql_define.StatusText(mysql_define.FIL_PAGE_INODE))
-
-	case mysql_define.FIL_PAGE_INDEX:
-		fmt.Printf("page number:[%d]; page type:[%s]\n", pageNumber, mysql_define.StatusText(mysql_define.FIL_PAGE_INDEX))
-
-	case mysql_define.FIL_PAGE_TYPE_ALLOCATED:
-		fmt.Printf("page number:[%d]; page type:[%s]\n", pageNumber, mysql_define.StatusText(mysql_define.FIL_PAGE_TYPE_ALLOCATED))
-
-	case mysql_define.FIL_PAGE_TYPE_XDES:
-		fmt.Printf("page number:[%d]; page type:[%s]\n", pageNumber, mysql_define.StatusText(mysql_define.FIL_PAGE_TYPE_XDES))
-
-	case mysql_define.FIL_PAGE_IBUF_BITMAP:
-		fmt.Printf("page number:[%d]; page type:[%s]\n", pageNumber, mysql_define.StatusText(mysql_define.FIL_PAGE_IBUF_BITMAP))
-	}
-	return nil
-}
-
-func (fap *FileAllPage) PrintPageType() error {
-
-	if err := fap.printPageType(); err != nil{
-		return err
-	}
-	return nil
 }
 
 func (fap *FileAllPage) PageParseFILHeader(buffer *ringbuffer.RingBuffer) error {
@@ -184,7 +156,6 @@ func (fap *FileAllPage) PageParseFILHeader(buffer *ringbuffer.RingBuffer) error 
 
 	buffer.ExploreBreak()
 
-
 	return nil
 }
 
@@ -199,7 +170,7 @@ func (fap *FileAllPage) PageParseFILTailer(buffer *ringbuffer.RingBuffer, pageSi
 		return err
 	}
 	fap.OldStyleChecksum = buffer.PeekUint32(isUsingExplore)
-	if err := buffer.ExploreRetrieve(mysql_define.FIL_PAGE_END_LSN_OLD_CHKSUM/2); err != nil {
+	if err := buffer.ExploreRetrieve(mysql_define.FIL_PAGE_END_LSN_OLD_CHKSUM / 2); err != nil {
 		log.Error(err)
 		return err
 	}
@@ -215,9 +186,65 @@ func (fap *FileAllPage) PageParseBody(buffer *ringbuffer.RingBuffer, pageSize my
 	return nil
 }
 
+// ------------------------------------------------------- //
+
+func (fap *FileAllPage) printPageType() error {
+	log.Debugf("page type value:%d", fap.PageType)
+
+	pageNumber := fap.Offset
+
+	switch mysql_define.T_FIL_PAGE_TYPE(fap.PageType) {
+
+	case mysql_define.FIL_PAGE_TYPE_FSP_HDR:
+		fmt.Printf("page number:[%d]; page type:[%s]\n", pageNumber, mysql_define.StatusText(mysql_define.FIL_PAGE_TYPE_FSP_HDR))
+
+	case mysql_define.FIL_PAGE_INODE:
+		fmt.Printf("page number:[%d]; page type:[%s]\n", pageNumber, mysql_define.StatusText(mysql_define.FIL_PAGE_INODE))
+
+	case mysql_define.FIL_PAGE_INDEX:
+		fmt.Printf("page number:[%d]; page type:[%s]\n", pageNumber, mysql_define.StatusText(mysql_define.FIL_PAGE_INDEX))
+
+	case mysql_define.FIL_PAGE_TYPE_ALLOCATED:
+		fmt.Printf("page number:[%d]; page type:[%s]\n", pageNumber, mysql_define.StatusText(mysql_define.FIL_PAGE_TYPE_ALLOCATED))
+
+	case mysql_define.FIL_PAGE_TYPE_XDES:
+		fmt.Printf("page number:[%d]; page type:[%s]\n", pageNumber, mysql_define.StatusText(mysql_define.FIL_PAGE_TYPE_XDES))
+
+	case mysql_define.FIL_PAGE_IBUF_BITMAP:
+		fmt.Printf("page number:[%d]; page type:[%s]\n", pageNumber, mysql_define.StatusText(mysql_define.FIL_PAGE_IBUF_BITMAP))
+	}
+	return nil
+}
+
+func (fap *FileAllPage) generateHumanFormatHeader() []print.PrintFormatT {
+	var waitPrintT []print.PrintFormatT
+	var currentPosition = mysql_define.FIL_PAGE_SPACE_OR_CHKSUM
+	waitPrintT = append(waitPrintT, *print.NewPrintFormatT(print.PrintDivideSignBlock, "FILE HEADER"))
+	waitPrintT = append(waitPrintT, print.Translate(&currentPosition, fap.FileHeader)...)
+
+	return waitPrintT
+}
+
+func (fap *FileAllPage) generateHumanFormatTrailer() []print.PrintFormatT {
+	var waitPrintT []print.PrintFormatT
+	var currentPosition = "N"
+	waitPrintT = append(waitPrintT, *print.NewPrintFormatT(print.PrintDivideSignBlock, "FILE TRAILER"))
+	waitPrintT = append(waitPrintT, print.Translate(&currentPosition, fap.FileTrailer)...)
+
+	return waitPrintT
+}
+
+func (fap *FileAllPage) PrintPageType() error {
+
+	if err := fap.printPageType(); err != nil {
+		return err
+	}
+	return nil
+}
+
 // ----------------- common function ------------------------------------//
 
-func getListBaseNode(buffer *ringbuffer.RingBuffer)(*ListBaseNode, error){
+func getListBaseNode(buffer *ringbuffer.RingBuffer) (*ListBaseNode, error) {
 
 	var isUsingExplore = true
 	var listBaseNode ListBaseNode
@@ -230,13 +257,13 @@ func getListBaseNode(buffer *ringbuffer.RingBuffer)(*ListBaseNode, error){
 	}
 
 	listBaseNode.First, err = getPageNoANDOffset(buffer, isUsingExplore)
-	if err != nil{
+	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
 	listBaseNode.Last, err = getPageNoANDOffset(buffer, isUsingExplore)
-	if err != nil{
+	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
@@ -244,7 +271,7 @@ func getListBaseNode(buffer *ringbuffer.RingBuffer)(*ListBaseNode, error){
 	return &listBaseNode, nil
 }
 
-func getTreeNode(buffer *ringbuffer.RingBuffer)(*TreeNode, error){
+func getTreeNode(buffer *ringbuffer.RingBuffer) (*TreeNode, error) {
 
 	var isUsingExplore = true
 	var treeNode TreeNode
@@ -257,7 +284,7 @@ func getTreeNode(buffer *ringbuffer.RingBuffer)(*TreeNode, error){
 	}
 
 	treeNode.NodePosition, err = getPageNoANDOffset(buffer, isUsingExplore)
-	if err != nil{
+	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
@@ -265,7 +292,7 @@ func getTreeNode(buffer *ringbuffer.RingBuffer)(*TreeNode, error){
 	return &treeNode, nil
 }
 
-func getPageNoANDOffset(buffer *ringbuffer.RingBuffer, isUsingExplore bool)(*PageNoANDOffset, error){
+func getPageNoANDOffset(buffer *ringbuffer.RingBuffer, isUsingExplore bool) (*PageNoANDOffset, error) {
 
 	var listNode PageNoANDOffset
 
@@ -284,7 +311,7 @@ func getPageNoANDOffset(buffer *ringbuffer.RingBuffer, isUsingExplore bool)(*Pag
 	return &listNode, nil
 }
 
-func getINodeEntry(buffer *ringbuffer.RingBuffer, isUsingExplore bool)(INodeEntry, error){
+func getINodeEntry(buffer *ringbuffer.RingBuffer, isUsingExplore bool) (INodeEntry, error) {
 
 	var iNodeEntry INodeEntry
 	var err error
@@ -301,15 +328,15 @@ func getINodeEntry(buffer *ringbuffer.RingBuffer, isUsingExplore bool)(INodeEntr
 		return iNodeEntry, err
 	}
 
-	if iNodeEntry.FSegFree, err = getListBaseNode(buffer); err != nil{
+	if iNodeEntry.FSegFree, err = getListBaseNode(buffer); err != nil {
 		log.Error(err)
 		return iNodeEntry, err
 	}
-	if iNodeEntry.FSegNotFull, err = getListBaseNode(buffer); err != nil{
+	if iNodeEntry.FSegNotFull, err = getListBaseNode(buffer); err != nil {
 		log.Error(err)
 		return iNodeEntry, err
 	}
-	if iNodeEntry.FSegFull, err = getListBaseNode(buffer); err != nil{
+	if iNodeEntry.FSegFull, err = getListBaseNode(buffer); err != nil {
 		log.Error(err)
 		return iNodeEntry, err
 	}
@@ -320,16 +347,16 @@ func getINodeEntry(buffer *ringbuffer.RingBuffer, isUsingExplore bool)(INodeEntr
 		return iNodeEntry, err
 	}
 
-	for i:=0; i<32;i++{
+	for i := 0; i < 32; i++ {
 		var fSegFragTemp uint32
 
-		if fSegFragTemp, err = getFSegFragArr(buffer, isUsingExplore); err != nil{
+		if fSegFragTemp, err = getFSegFragArr(buffer, isUsingExplore); err != nil {
 			log.Errorf("index[%d]; error[%v]", i, err)
 			return iNodeEntry, err
 		}
-		if fSegFragTemp == 0xffffffff{
+		if fSegFragTemp == 0xffffffff {
 			log.Debug("all FSEG_FRAG_ARR_I object have showed in this segment object on INode page")
-			if err = buffer.ExploreRetrieve(mysql_define.FSEG_FRAG_ARR_I*(31-i)); err != nil {
+			if err = buffer.ExploreRetrieve(mysql_define.FSEG_FRAG_ARR_I * (31 - i)); err != nil {
 				log.Error(err)
 				return iNodeEntry, err
 			}
@@ -342,7 +369,7 @@ func getINodeEntry(buffer *ringbuffer.RingBuffer, isUsingExplore bool)(INodeEntr
 	return iNodeEntry, nil
 }
 
-func getFSegFragArr(buffer *ringbuffer.RingBuffer, isUsingExplore bool)(fSegFrag uint32, err error){
+func getFSegFragArr(buffer *ringbuffer.RingBuffer, isUsingExplore bool) (fSegFrag uint32, err error) {
 	fSegFrag = buffer.PeekUint32(isUsingExplore)
 	if err = buffer.ExploreRetrieve(mysql_define.FSEG_FRAG_ARR_I); err != nil {
 		log.Error(err)
@@ -351,7 +378,7 @@ func getFSegFragArr(buffer *ringbuffer.RingBuffer, isUsingExplore bool)(fSegFrag
 	return
 }
 
-func getRecord(buffer *ringbuffer.RingBuffer, isUsingExplore bool)(recordPtr *Record, err error){
+func getRecord(buffer *ringbuffer.RingBuffer, isUsingExplore bool) (recordPtr *Record, err error) {
 	recordPtr = new(Record)
 
 	InfoFlagsPlusNOwned := buffer.PeekUint8(isUsingExplore)
@@ -359,17 +386,17 @@ func getRecord(buffer *ringbuffer.RingBuffer, isUsingExplore bool)(recordPtr *Re
 		log.Error(err)
 		return
 	}
-	recordPtr.InfoFlags.DelFlag = (InfoFlagsPlusNOwned&0x20)>>5
-	recordPtr.InfoFlags.MinFlag = (InfoFlagsPlusNOwned&0x10)>>4
-	recordPtr.NOwned = InfoFlagsPlusNOwned&0x0F
+	recordPtr.InfoFlags.DelFlag = (InfoFlagsPlusNOwned & 0x20) >> 5
+	recordPtr.InfoFlags.MinFlag = (InfoFlagsPlusNOwned & 0x10) >> 4
+	recordPtr.NOwned = InfoFlagsPlusNOwned & 0x0F
 
 	HeapNoIsOrderPlusRecordType := buffer.PeekUint16(isUsingExplore)
 	if err = buffer.ExploreRetrieve(mysql_define.HeapNoPlusRecordType); err != nil {
 		log.Error(err)
 		return
 	}
-	recordPtr.HeapNoIsOrder = (HeapNoIsOrderPlusRecordType&0xFFF8)>>3
-	recordPtr.RecordType = HeapNoIsOrderPlusRecordType&0x7
+	recordPtr.HeapNoIsOrder = (HeapNoIsOrderPlusRecordType & 0xFFF8) >> 3
+	recordPtr.RecordType = HeapNoIsOrderPlusRecordType & 0x7
 
 	nextRecord := buffer.PeekUint16(isUsingExplore)
 	if err = buffer.ExploreRetrieve(mysql_define.NextRecord); err != nil {

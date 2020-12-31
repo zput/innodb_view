@@ -7,50 +7,51 @@ import (
 	"strings"
 )
 
-type foo func (t *PrintFormatT)
+type foo func(t *PrintFormatT)
 
-func SetPosition(p int)foo{
-	return func(t *PrintFormatT){
+func SetPosition(p interface{}) foo {
+	return func(t *PrintFormatT) {
 		t.Position = p
 	}
 }
-func SetPositionString(p string)foo{
-	return func(t *PrintFormatT){
+func SetPositionString(p string) foo {
+	return func(t *PrintFormatT) {
 		t.Position = p
 	}
 }
-func SetName(n string)foo{
-	return func(t *PrintFormatT){
+func SetName(n string) foo {
+	return func(t *PrintFormatT) {
 		t.Name = n
 	}
 }
-func SetValue(v interface{})foo{
-	return func(t *PrintFormatT){
+func SetValue(v interface{}) foo {
+	return func(t *PrintFormatT) {
 		t.Value = v
 	}
 }
 
-func ConstructPrintFormatT(functions ...foo)(ret *PrintFormatT){
+func ConstructPrintFormatT(functions ...foo) (ret *PrintFormatT) {
 	ret = new(PrintFormatT)
-	for index := range functions{
+	for index := range functions {
 		functions[index](ret)
 	}
 	return
 }
 
 type PrintFormatT struct {
-	Position  interface{} `table:"POSITION"`
-	Name string `table:"NAME"`
-	Value interface{} `table:"VALUE"`
+	Position interface{} `table:"POSITION"`
+	Name     string      `table:"NAME"`
+	Value    interface{} `table:"VALUE"`
 }
 
 type PrintDivideSign int
-const(
+
+const (
 	PrintDivideSignBlock = iota
 	PrintDivideSignBlank
 )
 
-func NewPrintFormatT(sign PrintDivideSign, name string)*PrintFormatT{
+func NewPrintFormatT(sign PrintDivideSign, name string) *PrintFormatT {
 
 	var splitSign = ""
 	var nameSign = ""
@@ -61,30 +62,30 @@ func NewPrintFormatT(sign PrintDivideSign, name string)*PrintFormatT{
 		nameSign = fmt.Sprintf("**************%s**************", name)
 	case PrintDivideSignBlank:
 	}
-	
+
 	return ConstructPrintFormatT(SetPositionString(splitSign), SetName(nameSign), SetValue(splitSign))
 }
 
 // Output to stdout
 //table.Output(objects)
-func PrintFun(objects []PrintFormatT)string{
+func PrintFun(objects []PrintFormatT) string {
 
 	// Or just return table string and then do something
 	return table.AsciiTable(objects)
 }
 
-func Translate(currentPosition int, obj interface{}) []PrintFormatT {
+func Translate(currentPosition interface{}, obj interface{}) []PrintFormatT {
 	// Wrap the original in a reflect.Value
 	var original = reflect.ValueOf(obj)
 	var ret = make([]PrintFormatT, 0)
 
-	translateRecursive(&currentPosition, "", &ret, original)
+	translateRecursive(currentPosition, "", &ret, original)
 
 	// Remove the reflection wrapper
 	return ret
 }
 
-func translateRecursive(currentPositionPtr *int, prefix string, ret *[]PrintFormatT, original reflect.Value) {
+func translateRecursive(currentPositionPtr interface{}, prefix string, ret *[]PrintFormatT, original reflect.Value) {
 	switch original.Kind() {
 	// The first cases handle nested structures and translate them recursively
 
@@ -115,7 +116,7 @@ func translateRecursive(currentPositionPtr *int, prefix string, ret *[]PrintForm
 	case reflect.Struct:
 		for i := 0; i < original.NumField(); i += 1 {
 			translateRecursive(currentPositionPtr,
-				strings.TrimPrefix(prefix+"."+ snakeString(original.Type().Field(i).Tag.Get("self")), "."),
+				strings.TrimPrefix(prefix+"."+snakeString(original.Type().Field(i).Tag.Get("self")), "."),
 				ret, original.Field(i))
 		}
 
@@ -147,8 +148,32 @@ func translateRecursive(currentPositionPtr *int, prefix string, ret *[]PrintForm
 
 	// And everything else will simply be taken from the original
 	default:
-		*ret = append(*ret, *ConstructPrintFormatT(SetPosition(*currentPositionPtr), SetName(prefix), SetValue(original)))
-		*currentPositionPtr += int(original.Type().Size())
+		var saveUpperFloorData interface{}
+		tmpPointerValue := reflect.ValueOf(currentPositionPtr)
+		switch tmpPointerValue.Elem().Type().Kind() {
+		case reflect.Int:
+			fallthrough
+		case reflect.Int8:
+			fallthrough
+		case reflect.Int16:
+			fallthrough
+		case reflect.Int32:
+			fallthrough
+		case reflect.Int64:
+			//(*currentPositionPtr).(int) += int(original.Type().Size())
+			saveUpperFloorData = tmpPointerValue.Elem().Interface().(int)
+			tmpPointerValue.Elem().SetInt(int64(saveUpperFloorData.(int) + int(original.Type().Size())))
+
+		case reflect.String:
+			//(*currentPositionPtr).(string) += fmt.Sprintf("+%d", int(original.Type().Size()))
+			saveUpperFloorData = tmpPointerValue.Elem().Interface().(string)
+			tmpPointerValue.Elem().SetString(saveUpperFloorData.(string) + fmt.Sprintf("+%d", int(original.Type().Size())))
+
+		default:
+			panic(fmt.Sprintf("print.translateRecursive; error; %v", tmpPointerValue.Elem().Type().Kind()))
+		}
+
+		*ret = append(*ret, *ConstructPrintFormatT(SetPosition(saveUpperFloorData), SetName(prefix), SetValue(original)))
 	}
 
 }

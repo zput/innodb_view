@@ -10,16 +10,16 @@ import (
 
 // ----------------- FspHeaderPage ------------------------------------//
 
-type FspHeaderPage struct{
+type FspHeaderPage struct {
 	FileAllPage
-	FspSpaceID uint32
-	FspNotUsed uint32
-	FspSize uint32
-	FspFreeLimit uint32
+	FspSpaceID    uint32
+	FspNotUsed    uint32
+	FspSize       uint32
+	FspFreeLimit  uint32
 	FspSpaceFlags uint32
-	FspFragNUsed uint32
+	FspFragNUsed  uint32
 
-	FspFree *ListBaseNode
+	FspFree     *ListBaseNode
 	FspFreeFrag *ListBaseNode
 	FspFullFrag *ListBaseNode
 
@@ -29,13 +29,13 @@ type FspHeaderPage struct{
 	FspSegInodesFree *ListBaseNode
 }
 
-func (fhp *FspHeaderPage) GetFileType()mysql_define.T_FIL_PAGE_TYPE{
+func (fhp *FspHeaderPage) GetFileType() mysql_define.T_FIL_PAGE_TYPE {
 	return mysql_define.T_FIL_PAGE_TYPE(fhp.FileAllPage.PageType)
 }
 
 func (fhp *FspHeaderPage) printPageType() error {
 	prettyFormat, err := json.MarshalIndent(fhp, "", "    ")
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	fmt.Printf("%s", string(prettyFormat))
@@ -45,17 +45,16 @@ func (fhp *FspHeaderPage) printPageType() error {
 func (fhp *FspHeaderPage) PrintPageType() error {
 	fhp.printPageType()
 
-	if err := fhp.FileAllPage.PrintPageType(); err != nil{
+	if err := fhp.FileAllPage.PrintPageType(); err != nil {
 		log.Error(err)
 		return err
 	}
-
 
 	return nil
 }
 
 func (fhp *FspHeaderPage) PageParseFILHeader(buffer *ringbuffer.RingBuffer) error {
-	if err := fhp.FileAllPage.PageParseFILHeader(buffer); err != nil{
+	if err := fhp.FileAllPage.PageParseFILHeader(buffer); err != nil {
 		return err
 	}
 
@@ -63,7 +62,7 @@ func (fhp *FspHeaderPage) PageParseFILHeader(buffer *ringbuffer.RingBuffer) erro
 }
 
 func (fhp *FspHeaderPage) PageParseFILTailer(buffer *ringbuffer.RingBuffer, pageSize mysql_define.PAGE_SIZE) error {
-	if err := fhp.FileAllPage.PageParseFILTailer(buffer, pageSize); err != nil{
+	if err := fhp.FileAllPage.PageParseFILTailer(buffer, pageSize); err != nil {
 		return err
 	}
 
@@ -116,15 +115,15 @@ func (fhp *FspHeaderPage) PageParseBody(buffer *ringbuffer.RingBuffer, pageSize 
 	}
 
 	var err error
-	if fhp.FspFree, err = getListBaseNode(buffer); err != nil{
+	if fhp.FspFree, err = getListBaseNode(buffer); err != nil {
 		log.Error(err)
 		return err
 	}
-	if fhp.FspFreeFrag, err = getListBaseNode(buffer); err != nil{
+	if fhp.FspFreeFrag, err = getListBaseNode(buffer); err != nil {
 		log.Error(err)
 		return err
 	}
-	if fhp.FspFullFrag, err = getListBaseNode(buffer); err != nil{
+	if fhp.FspFullFrag, err = getListBaseNode(buffer); err != nil {
 		log.Error(err)
 		return err
 	}
@@ -135,11 +134,11 @@ func (fhp *FspHeaderPage) PageParseBody(buffer *ringbuffer.RingBuffer, pageSize 
 		return err
 	}
 
-	if fhp.FspSegInodesFull, err = getListBaseNode(buffer); err != nil{
+	if fhp.FspSegInodesFull, err = getListBaseNode(buffer); err != nil {
 		log.Error(err)
 		return err
 	}
-	if fhp.FspSegInodesFree, err = getListBaseNode(buffer); err != nil{
+	if fhp.FspSegInodesFree, err = getListBaseNode(buffer); err != nil {
 		log.Error(err)
 		return err
 	}
@@ -148,5 +147,3 @@ func (fhp *FspHeaderPage) PageParseBody(buffer *ringbuffer.RingBuffer, pageSize 
 
 	return nil
 }
-
-
