@@ -3,8 +3,8 @@ package view
 import (
 	"fmt"
 	"github.com/zput/innodb_view/log"
-	"github.com/zput/innodb_view/print"
 	"github.com/zput/innodb_view/mysql_define"
+	"github.com/zput/innodb_view/print"
 	"github.com/zput/ringbuffer"
 	//"gopkg.in/yaml.v2"
 	"github.com/naoina/toml"
@@ -13,6 +13,13 @@ import (
 type IndexPage struct{
 	FileAllPage `yaml:"FileAllPage" self:"FileAllPage"`
 
+	IndexHeader `yaml:"IndexHeader" self:"IndexHeader"`
+	FSegHeader `yaml:"FSegHeader" self:"FSegHeader"`
+
+	IndexRecord `yaml:"IndexRecord" self:"IndexRecord"`
+}
+
+type IndexHeader struct{
 	NDirSlots uint16  `yaml:"NDirSlots" self:"NDirSlots"`
 	HeapTop uint16 `yaml:"HeapTop" self:"HeapTop"`
 	NHeap uint16 `yaml:"NHeap" self:"NHeap"`
@@ -25,10 +32,14 @@ type IndexPage struct{
 	MaxTrxID uint64 `yaml:"MaxTrxID" self:"MaxTrxID"`
 	Level uint16 `yaml:"Level" self:"Level"`
 	IndexID uint64 `yaml:"IndexID" self:"IndexID"`
+}
 
+type FSegHeader struct{
 	LeafNode *TreeNode  `yaml:"LeafNode" self:"LeafNode"`
 	NoLeafNode *TreeNode `yaml:"NoLeafNode" self:"NoLeafNode"`
+}
 
+type IndexRecord struct {
 	RecordSlice []*Record `yaml:"RecordSlice" self:"RecordSlice"`
 	PageDirectorySlice []PageDirectoryElement `yaml:"PageDirectorySlice" self:"PageDirectorySlice"`
 }
@@ -61,40 +72,6 @@ type PageDirectoryElement struct{
 
 func (ip *IndexPage) GetFileType()mysql_define.T_FIL_PAGE_TYPE{
 	return mysql_define.T_FIL_PAGE_TYPE(ip.FileAllPage.PageType)
-}
-
-func (ip *IndexPage) printPageType() error {
-	//prettyFormat, err := json.MarshalIndent(ip, "", "    ")
-	//prettyFormat, err := yaml.Marshal(ip)
-	prettyFormat, err := toml.Marshal(ip)
-	if err != nil{
-		return err
-	}
-	fmt.Printf("%s\n", string(prettyFormat))
-	return nil
-}
-
-func (ip *IndexPage) generateHumanFormat() error {
-
-	fmt.Printf("%s\n", print.PrintFun(print.Translate(ip)))
-	return nil
-}
-
-func (ip *IndexPage) PrintPageType() error {
-
-	ip.generateHumanFormat()
-
-	fmt.Println()
-
-	ip.printPageType()
-
-	if err := ip.FileAllPage.PrintPageType(); err != nil{
-		log.Error(err)
-		return err
-	}
-
-
-	return nil
 }
 
 func (ip *IndexPage) PageParseFILHeader(buffer *ringbuffer.RingBuffer) error {
@@ -217,6 +194,7 @@ func (ip *IndexPage) PageParseBody(buffer *ringbuffer.RingBuffer, pageSize mysql
 	return nil
 }
 
+// --------------- inner method function ----------------- //
 func (ip *IndexPage) parsePageDirectorySlot(buffer *ringbuffer.RingBuffer, pageSize mysql_define.PAGE_SIZE) error {
 	var isUsingExplore = true
 	var err error
@@ -291,5 +269,54 @@ func (ip *IndexPage) parseRecords(buffer *ringbuffer.RingBuffer, pageSize mysql_
 		}
 		offset += recordPtr.NextRecordOffsetRelative
 	}
+	return nil
+}
+
+func (ip *IndexPage) printPageType() error {
+	//prettyFormat, err := json.MarshalIndent(ip, "", "    ")
+	//prettyFormat, err := yaml.Marshal(ip)
+	prettyFormat, err := toml.Marshal(ip)
+	if err != nil{
+		return err
+	}
+	fmt.Printf("%s\n", string(prettyFormat))
+	return nil
+}
+
+func (ip *IndexPage) generateHumanFormat() string {
+	var waitPrintT []print.PrintFormatT
+	waitPrintT = append(waitPrintT, *print.NewPrintFormatT(print.PrintDivideSignBlock, "index page:file header"))
+	waitPrintT = append(waitPrintT, print.Translate(mysql_define.FIL_PAGE_SPACE_OR_CHKSUM, ip.FileAllPage)...)
+
+	waitPrintT = append(waitPrintT, *print.NewPrintFormatT(print.PrintDivideSignBlock, "index page:index header"))
+	waitPrintT = append(waitPrintT, print.Translate(mysql_define.FIL_PAGE_DATA, ip.IndexHeader)...)
+
+
+	waitPrintT = append(waitPrintT, *print.NewPrintFormatT(print.PrintDivideSignBlock, "index page:FSEG header"))
+	waitPrintT = append(waitPrintT, print.Translate(mysql_define.FIL_PAGE_DATA+mysql_define.INDEX_PAGE_HEADER_SIZE, ip.FSegHeader)...)
+
+	waitPrintT = append(waitPrintT, *print.NewPrintFormatT(print.PrintDivideSignBlock, "index page:All records"))
+	waitPrintT = append(waitPrintT, print.Translate(mysql_define.INDEX_PAGE_BEFORE_RECORD, ip.IndexRecord)...)
+
+
+
+	fmt.Printf("%s\n", print.PrintFun(waitPrintT))
+	return ""
+}
+
+func (ip *IndexPage) PrintPageType() error {
+
+	ip.generateHumanFormat()
+
+	fmt.Println()
+
+	ip.printPageType()
+
+	if err := ip.FileAllPage.PrintPageType(); err != nil{
+		log.Error(err)
+		return err
+	}
+
+
 	return nil
 }

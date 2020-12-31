@@ -1,6 +1,7 @@
 package print
 
 import (
+	"fmt"
 	"github.com/modood/table"
 	"reflect"
 	"strings"
@@ -9,6 +10,11 @@ import (
 type foo func (t *PrintFormatT)
 
 func SetPosition(p int)foo{
+	return func(t *PrintFormatT){
+		t.Position = p
+	}
+}
+func SetPositionString(p string)foo{
 	return func(t *PrintFormatT){
 		t.Position = p
 	}
@@ -33,9 +39,30 @@ func ConstructPrintFormatT(functions ...foo)(ret *PrintFormatT){
 }
 
 type PrintFormatT struct {
-	Position  int `table:"position"`
-	Name string `table:"name"`
-	Value interface{} `table:"value"`
+	Position  interface{} `table:"POSITION"`
+	Name string `table:"NAME"`
+	Value interface{} `table:"VALUE"`
+}
+
+type PrintDivideSign int
+const(
+	PrintDivideSignBlock = iota
+	PrintDivideSignBlank
+)
+
+func NewPrintFormatT(sign PrintDivideSign, name string)*PrintFormatT{
+
+	var splitSign = ""
+	var nameSign = ""
+
+	switch sign {
+	case PrintDivideSignBlock:
+		splitSign = "**************"
+		nameSign = fmt.Sprintf("**************%s**************", name)
+	case PrintDivideSignBlank:
+	}
+	
+	return ConstructPrintFormatT(SetPositionString(splitSign), SetName(nameSign), SetValue(splitSign))
 }
 
 // Output to stdout
@@ -43,14 +70,13 @@ type PrintFormatT struct {
 func PrintFun(objects []PrintFormatT)string{
 
 	// Or just return table string and then do something
-	return table.Table(objects)
+	return table.AsciiTable(objects)
 }
 
-func Translate(obj interface{}) []PrintFormatT {
+func Translate(currentPosition int, obj interface{}) []PrintFormatT {
 	// Wrap the original in a reflect.Value
 	var original = reflect.ValueOf(obj)
 	var ret = make([]PrintFormatT, 0)
-	var currentPosition = 0
 
 	translateRecursive(&currentPosition, "", &ret, original)
 
@@ -88,13 +114,16 @@ func translateRecursive(currentPositionPtr *int, prefix string, ret *[]PrintForm
 	// If it is a struct we translate each field
 	case reflect.Struct:
 		for i := 0; i < original.NumField(); i += 1 {
-			translateRecursive(currentPositionPtr, strings.TrimPrefix(prefix+"."+original.Type().Field(i).Tag.Get("self"), "."), ret, original.Field(i))
+			translateRecursive(currentPositionPtr,
+				strings.TrimPrefix(prefix+"."+ snakeString(original.Type().Field(i).Tag.Get("self")), "."),
+				ret, original.Field(i))
 		}
 
 	// If it is a slice we create a new slice and translate each element
 	case reflect.Slice:
 		for i := 0; i < original.Len(); i += 1 {
-			translateRecursive(currentPositionPtr, prefix, ret, original.Index(i))
+			translateRecursive(currentPositionPtr, prefix+fmt.Sprintf("[%d]", i), ret, original.Index(i))
+			*ret = append(*ret, *NewPrintFormatT(PrintDivideSignBlank, ""))
 		}
 
 	// Otherwise we cannot traverse anywhere so this finishes the the recursion
@@ -122,4 +151,31 @@ func translateRecursive(currentPositionPtr *int, prefix string, ret *[]PrintForm
 		*currentPositionPtr += int(original.Type().Size())
 	}
 
+}
+
+/**
+ * 驼峰转蛇形 snake string
+ * @description XxYy to xx_yy , XxYY to xx_y_y
+ * @param s 需要转换的字符串
+ * @return string
+ **/
+func snakeString(s string) string {
+	data := make([]byte, 0, len(s)*2)
+	j := false
+	num := len(s)
+	for i := 0; i < num; i++ {
+		d := s[i]
+		// or通过ASCII码进行大小写的转化
+		// 65-90（A-Z），97-122（a-z）
+		//判断如果字母为大写的A-Z就在前面拼接一个_
+		if i > 0 && d >= 'A' && d <= 'Z' && j {
+			data = append(data, '_')
+		}
+		if d != '_' {
+			j = true
+		}
+		data = append(data, d)
+	}
+	//ToLower把大写字母统一转小写
+	return strings.ToLower(string(data[:]))
 }
