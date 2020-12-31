@@ -199,7 +199,7 @@ func snakeString(s string) string {
 		// or通过ASCII码进行大小写的转化
 		// 65-90（A-Z），97-122（a-z）
 		//判断如果字母为大写的A-Z就在前面拼接一个_
-		if i > 0 && d >= 'A' && d <= 'Z' && j {
+		if i > 0 && d >= 'A' && d <= 'Z' && j && (d!='D'&&s[i-1]!='I')&&(d!='S'&&s[i-1]!='L')&&(i>1&&d!='N'&&s[i-1]!='S'&&s[i-2]!='L'){
 			data = append(data, '_')
 		}
 		if d != '_' {
