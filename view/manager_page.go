@@ -4,15 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/zput/innodb_view/log"
-	"github.com/zput/innodb_view/print"
 	"github.com/zput/innodb_view/mysql_define"
+	"github.com/zput/innodb_view/print"
 	"github.com/zput/ringbuffer"
 )
 
 // ----------------- FspHeaderPage ------------------------------------//
 type FspHeaderPage struct {
 	FileAllPage `yaml:"FileAllPage" self:"FileAllPage"`
-	FspHeader `yaml:"FspHeader" self:"FspHeader"`
+	FspHeader   `yaml:"FspHeader" self:"FspHeader"`
 }
 
 type FspHeader struct {

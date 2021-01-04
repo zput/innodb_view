@@ -49,10 +49,10 @@ type Record struct {
 	// Nullable field bitmap (1bit per nullable field) //不定长
 
 	// ------------- 5 byte always ------------------------
-	InfoFlags                InfoFlagsT `yaml:"InfoFlags" self:"InfoFlags,4"`                               // 4 bits
-	NOwned                   uint8      `yaml:"NOwned" self:"NOwned,4"`                                     // 4 bits
-	HeapNoIsOrder            uint16     `yaml:"HeapNoIsOrder" self:"HeapNoIsOrder,13"`                       // 13 bits
-	RecordType               uint16     `yaml:"RecordType" self:"RecordType,3"`                             // 3 bits
+	InfoFlags                InfoFlagsT `yaml:"InfoFlags" self:"InfoFlags,4"`                             // 4 bits
+	NOwned                   uint8      `yaml:"NOwned" self:"NOwned,4"`                                   // 4 bits
+	HeapNoIsOrder            uint16     `yaml:"HeapNoIsOrder" self:"HeapNoIsOrder,13"`                    // 13 bits
+	RecordType               uint16     `yaml:"RecordType" self:"RecordType,3"`                           // 3 bits
 	NextRecordOffsetRelative int16      `yaml:"NextRecordOffsetRelative" self:"NextRecordOffsetRelative"` // 2 byte
 }
 
@@ -62,8 +62,8 @@ type InfoFlagsT struct {
 	// saved flag // 1 bit
 	SaveFlag1 uint8 `yaml:"SaveFlag1" self:"SaveFlag1,1"` // 1 bit
 	SaveFlag2 uint8 `yaml:"SaveFlag2" self:"SaveFlag2,1"` // 1 bit
-	DelFlag uint8 `yaml:"DelFlag" self:"DelFlag,1"` // 1 bit
-	MinFlag uint8 `yaml:"MinFlag" self:"MinFlag,1"` // 1 bit
+	DelFlag   uint8 `yaml:"DelFlag" self:"DelFlag,1"`     // 1 bit
+	MinFlag   uint8 `yaml:"MinFlag" self:"MinFlag,1"`     // 1 bit
 }
 
 type PageDirectoryElement struct {
@@ -297,7 +297,7 @@ func (ip *IndexPage) generateHumanFormat() []print.PrintFormatT {
 	waitPrintT = append(waitPrintT, print.Translate(&currentPosition, ip.IndexHeader)...)
 
 	waitPrintT = append(waitPrintT, *print.NewPrintFormatT(print.PrintDivideSignBlock, "index page:FSEG header"))
-	currentPosition = mysql_define.FIL_PAGE_DATA+mysql_define.INDEX_PAGE_HEADER_SIZE
+	currentPosition = mysql_define.FIL_PAGE_DATA + mysql_define.INDEX_PAGE_HEADER_SIZE
 	currentPosition *= 8
 	waitPrintT = append(waitPrintT, print.Translate(&currentPosition, ip.FSegHeader)...)
 

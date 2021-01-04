@@ -97,18 +97,18 @@ func parse(slice interface{}) (
 			whetherIsByte := false
 			if ct == "" {
 				ct = cn
-			}else{
+			} else {
 				ctArray := strings.Split(ct, ",")
 				//log.Debugf("column[%v]", ctArray)
-				if len(ctArray) > 1{
+				if len(ctArray) > 1 {
 					ct = ctArray[0]
-					if ctArray[1] == "byte"{
+					if ctArray[1] == "byte" {
 						whetherIsByte = true
 					}
 				}
 			}
 			var cv string
-			if whetherIsByte == true{
+			if whetherIsByte == true {
 				switch v.FieldByName(cn).Elem().Type().Kind() {
 				case reflect.Int:
 					fallthrough
@@ -120,9 +120,9 @@ func parse(slice interface{}) (
 					fallthrough
 				case reflect.Int64:
 					tempValue := v.FieldByName(cn).Interface().(int)
-					if tempValue%8 == 0{
+					if tempValue%8 == 0 {
 						cv = fmt.Sprintf("%d Byte", tempValue/8)
-					}else{
+					} else {
 						cv = fmt.Sprintf("%d Byte %dbits", tempValue/8, tempValue%8)
 					}
 
@@ -131,7 +131,7 @@ func parse(slice interface{}) (
 				default:
 					cv = fmt.Sprintf("%+v--%v", v.FieldByName(cn).Interface(), v.FieldByName(cn).Type().Kind())
 				}
-			}else{
+			} else {
 				cv = fmt.Sprintf("%+v", v.FieldByName(cn).Interface())
 			}
 

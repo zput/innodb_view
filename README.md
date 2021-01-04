@@ -58,7 +58,7 @@ go get -u github.com/zput/innodb_view
   - ```./innodb_view -f ./runoob_tbl.ibd  -t scan -s 16```
   
 <details>
-  <summary>可遍历所有已经使用的页，分析每个页的类型</summary>
+  <summary>All pages used can be traversed, analyzing the type of each page</summary>
   
 ```sh
 page number:[0]; page type:[File space header]
@@ -74,7 +74,7 @@ page number:[0]; page type:[Freshly allocated page]
   - ```./innodb_view -f ./runoob_tbl.ibd  -t parse -s 16 -d --page_numbers=2```
   
 <details>
-  <summary>分析Inode page页面组成</summary>
+  <summary>Analyze Inode page page composition</summary>
   
 ```sh
 +----------------+--------------------------------------------------------------+----------------+
@@ -149,7 +149,7 @@ page number:[0]; page type:[Freshly allocated page]
   - ```./innodb_view -f ./runoob_tbl.ibd  -t parse -s 16 -d --page_numbers=3```
   
 <details>
-  <summary>分析Index page页面的组成等</summary>
+  <summary>Analyze the composition of the Index page</summary>
   
 ```sh
 +----------------+-----------------------------------------------------+----------------+

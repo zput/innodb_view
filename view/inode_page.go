@@ -3,8 +3,8 @@ package view
 import (
 	"fmt"
 	"github.com/zput/innodb_view/log"
-	"github.com/zput/innodb_view/print"
 	"github.com/zput/innodb_view/mysql_define"
+	"github.com/zput/innodb_view/print"
 	"github.com/zput/ringbuffer"
 	"gopkg.in/yaml.v2"
 )
@@ -113,7 +113,7 @@ func (inp *INodePage) generateHumanFormat() []print.PrintFormatT {
 	waitPrintT = append(waitPrintT, print.Translate(&currentPosition, inp.List)...)
 
 	waitPrintT = append(waitPrintT, *print.NewPrintFormatT(print.PrintDivideSignBlock, "index page:entry(0-84)"))
-	currentPosition = mysql_define.FIL_PAGE_DATA+mysql_define.FSEG_INODE_PAGE_NODE
+	currentPosition = mysql_define.FIL_PAGE_DATA + mysql_define.FSEG_INODE_PAGE_NODE
 	currentPosition *= 8
 	waitPrintT = append(waitPrintT, print.Translate(&currentPosition, inp.INodeEntrySlice)...)
 
@@ -137,5 +137,3 @@ func (inp *INodePage) PrintPageType() error {
 
 	return nil
 }
-
-

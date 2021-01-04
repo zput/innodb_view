@@ -135,13 +135,13 @@ func translateRecursive(currentPositionPtr interface{}, prefix string, thisTypeS
 			var selfSize = -1
 			self := original.Type().Field(i).Tag.Get("self")
 			selfArray := strings.Split(self, ",")
-			if len(selfArray) > 1{
+			if len(selfArray) > 1 {
 				selfMainName = selfArray[0]
 				var err error
-				if selfSize, err = strconv.Atoi(selfArray[1]); err != nil{
+				if selfSize, err = strconv.Atoi(selfArray[1]); err != nil {
 					panic(err)
 				}
-			}else{
+			} else {
 				selfMainName = self
 			}
 
@@ -194,8 +194,8 @@ func translateRecursive(currentPositionPtr interface{}, prefix string, thisTypeS
 			//(*currentPositionPtr).(int) += int(original.Type().Size())
 			saveUpperFloorData = tmpPointerValue.Elem().Interface().(int)
 
-			var typeSize = int(original.Type().Size())*8
-			if thisTypeSize >= 0{
+			var typeSize = int(original.Type().Size()) * 8
+			if thisTypeSize >= 0 {
 				typeSize = thisTypeSize
 			}
 			tmpPointerValue.Elem().SetInt(int64(saveUpperFloorData.(int) + typeSize))
@@ -230,7 +230,7 @@ func snakeString(s string) string {
 		// or通过ASCII码进行大小写的转化
 		// 65-90（A-Z），97-122（a-z）
 		//判断如果字母为大写的A-Z就在前面拼接一个_
-		if i > 0 && d >= 'A' && d <= 'Z' && j && (d!='D'&&s[i-1]!='I')&&(d!='S'&&s[i-1]!='L')&&(i>1&&d!='N'&&s[i-1]!='S'&&s[i-2]!='L'){
+		if i > 0 && d >= 'A' && d <= 'Z' && j && (d != 'D' && s[i-1] != 'I') && (d != 'S' && s[i-1] != 'L') && (i > 1 && d != 'N' && s[i-1] != 'S' && s[i-2] != 'L') {
 			data = append(data, '_')
 		}
 		if d != '_' {
