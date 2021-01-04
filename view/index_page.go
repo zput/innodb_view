@@ -49,10 +49,10 @@ type Record struct {
 	// Nullable field bitmap (1bit per nullable field) //不定长
 
 	// ------------- 5 byte always ------------------------
-	InfoFlags                InfoFlagsT `yaml:"InfoFlags" self:"InfoFlags"`                               // 4 bits
-	NOwned                   uint8      `yaml:"NOwned" self:"NOwned"`                                     // 4 bits
-	HeapNoIsOrder            uint16     `yaml:"HeapNoIsOrder" self:"HeapNoIsOrder"`                       // 13 bits
-	RecordType               uint16     `yaml:"RecordType" self:"RecordType"`                             // 3 bits
+	InfoFlags                InfoFlagsT `yaml:"InfoFlags" self:"InfoFlags,4"`                               // 4 bits
+	NOwned                   uint8      `yaml:"NOwned" self:"NOwned,4"`                                     // 4 bits
+	HeapNoIsOrder            uint16     `yaml:"HeapNoIsOrder" self:"HeapNoIsOrder,13"`                       // 13 bits
+	RecordType               uint16     `yaml:"RecordType" self:"RecordType,3"`                             // 3 bits
 	NextRecordOffsetRelative int16      `yaml:"NextRecordOffsetRelative" self:"NextRecordOffsetRelative"` // 2 byte
 }
 
@@ -60,14 +60,16 @@ type InfoFlagsT struct {
 	// total (4 bits)
 	// saved flag // 1 bit
 	// saved flag // 1 bit
-	DelFlag uint8 `yaml:"DelFlag" self:"DelFlag"` // 1 bit
-	MinFlag uint8 `yaml:"MinFlag" self:"MinFlag"` // 1 bit
+	SaveFlag1 uint8 `yaml:"SaveFlag1" self:"SaveFlag1,1"` // 1 bit
+	SaveFlag2 uint8 `yaml:"SaveFlag2" self:"SaveFlag2,1"` // 1 bit
+	DelFlag uint8 `yaml:"DelFlag" self:"DelFlag,1"` // 1 bit
+	MinFlag uint8 `yaml:"MinFlag" self:"MinFlag,1"` // 1 bit
 }
 
 type PageDirectoryElement struct {
 	DirectorySlot uint16 `yaml:"DirectorySlot" self:"DirectorySlot"` // 2 byte
 
-	NOwned uint8 `yaml:"NOwned" self:"NOwned"` // 此处物理没有对应的。它实际在record里面
+	NOwned uint8 `yaml:"NOwned" self:"NOwned,0"` // 此处物理没有对应的。它实际在record里面
 }
 
 func (ip *IndexPage) GetFileType() mysql_define.T_FIL_PAGE_TYPE {
@@ -291,14 +293,17 @@ func (ip *IndexPage) generateHumanFormat() []print.PrintFormatT {
 
 	waitPrintT = append(waitPrintT, *print.NewPrintFormatT(print.PrintDivideSignBlock, "index page:index header"))
 	currentPosition = mysql_define.FIL_PAGE_DATA
+	currentPosition *= 8
 	waitPrintT = append(waitPrintT, print.Translate(&currentPosition, ip.IndexHeader)...)
 
 	waitPrintT = append(waitPrintT, *print.NewPrintFormatT(print.PrintDivideSignBlock, "index page:FSEG header"))
 	currentPosition = mysql_define.FIL_PAGE_DATA+mysql_define.INDEX_PAGE_HEADER_SIZE
+	currentPosition *= 8
 	waitPrintT = append(waitPrintT, print.Translate(&currentPosition, ip.FSegHeader)...)
 
 	waitPrintT = append(waitPrintT, *print.NewPrintFormatT(print.PrintDivideSignBlock, "index page:All records"))
 	currentPosition = mysql_define.INDEX_PAGE_BEFORE_RECORD
+	currentPosition *= 8
 	waitPrintT = append(waitPrintT, print.Translate(&currentPosition, ip.IndexRecord)...)
 
 	waitPrintT = append(waitPrintT, ip.FileAllPage.generateHumanFormatTrailer()...)

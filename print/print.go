@@ -2,8 +2,9 @@ package print
 
 import (
 	"fmt"
-	"github.com/modood/table"
+	"github.com/zput/innodb_view/tool/table"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -39,7 +40,7 @@ func ConstructPrintFormatT(functions ...foo) (ret *PrintFormatT) {
 }
 
 type PrintFormatT struct {
-	Position interface{} `table:"POSITION"`
+	Position interface{} `table:"POSITION,byte"`
 	Name     string      `table:"NAME"`
 	Value    interface{} `table:"VALUE"`
 }
@@ -85,13 +86,22 @@ func Translate(currentPosition interface{}, obj interface{}) []PrintFormatT {
 	var original = reflect.ValueOf(obj)
 	var ret = make([]PrintFormatT, 0)
 
-	translateRecursive(currentPosition, "", &ret, original)
+	translateRecursive(currentPosition, "", -1, &ret, original)
 
 	// Remove the reflection wrapper
 	return ret
 }
 
-func translateRecursive(currentPositionPtr interface{}, prefix string, ret *[]PrintFormatT, original reflect.Value) {
+/*
+
+
+
+thisTypeSize:
+-1: default unsafe.SizeOf()
+0: should not show this value
+>0: x bit
+*/
+func translateRecursive(currentPositionPtr interface{}, prefix string, thisTypeSize int, ret *[]PrintFormatT, original reflect.Value) {
 	switch original.Kind() {
 	// The first cases handle nested structures and translate them recursively
 
@@ -106,7 +116,7 @@ func translateRecursive(currentPositionPtr interface{}, prefix string, ret *[]Pr
 			return
 		}
 
-		translateRecursive(currentPositionPtr, prefix, ret, originalValue)
+		translateRecursive(currentPositionPtr, prefix, -1, ret, originalValue)
 
 	// If it is an interface (which is very similar to a pointer), do basically the
 	// same as for the pointer. Though a pointer is not the same as an interface so
@@ -116,20 +126,35 @@ func translateRecursive(currentPositionPtr interface{}, prefix string, ret *[]Pr
 		// Get rid of the wrapping interface
 		originalValue := original.Elem()
 
-		translateRecursive(currentPositionPtr, prefix, ret, originalValue)
+		translateRecursive(currentPositionPtr, prefix, -1, ret, originalValue)
 
 	// If it is a struct we translate each field
 	case reflect.Struct:
 		for i := 0; i < original.NumField(); i += 1 {
+			var selfMainName string
+			var selfSize = -1
+			self := original.Type().Field(i).Tag.Get("self")
+			selfArray := strings.Split(self, ",")
+			if len(selfArray) > 1{
+				selfMainName = selfArray[0]
+				var err error
+				if selfSize, err = strconv.Atoi(selfArray[1]); err != nil{
+					panic(err)
+				}
+			}else{
+				selfMainName = self
+			}
+
 			translateRecursive(currentPositionPtr,
-				strings.TrimPrefix(prefix+"."+snakeString(original.Type().Field(i).Tag.Get("self")), "."),
+				strings.TrimPrefix(prefix+"."+snakeString(selfMainName), "."),
+				selfSize,
 				ret, original.Field(i))
 		}
 
 	// If it is a slice we create a new slice and translate each element
 	case reflect.Slice:
 		for i := 0; i < original.Len(); i += 1 {
-			translateRecursive(currentPositionPtr, prefix+fmt.Sprintf("[%d]", i), ret, original.Index(i))
+			translateRecursive(currentPositionPtr, prefix+fmt.Sprintf("[%d]", i), -1, ret, original.Index(i))
 			*ret = append(*ret, *NewPrintFormatT(PrintDivideSignBlank, ""))
 		}
 
@@ -168,7 +193,12 @@ func translateRecursive(currentPositionPtr interface{}, prefix string, ret *[]Pr
 		case reflect.Int64:
 			//(*currentPositionPtr).(int) += int(original.Type().Size())
 			saveUpperFloorData = tmpPointerValue.Elem().Interface().(int)
-			tmpPointerValue.Elem().SetInt(int64(saveUpperFloorData.(int) + int(original.Type().Size())))
+
+			var typeSize = int(original.Type().Size())*8
+			if thisTypeSize >= 0{
+				typeSize = thisTypeSize
+			}
+			tmpPointerValue.Elem().SetInt(int64(saveUpperFloorData.(int) + typeSize))
 
 		case reflect.String:
 			//(*currentPositionPtr).(string) += fmt.Sprintf("+%d", int(original.Type().Size()))
@@ -178,8 +208,9 @@ func translateRecursive(currentPositionPtr interface{}, prefix string, ret *[]Pr
 		default:
 			panic(fmt.Sprintf("print.translateRecursive; error; %v", tmpPointerValue.Elem().Type().Kind()))
 		}
-
-		*ret = append(*ret, *ConstructPrintFormatT(SetPosition(saveUpperFloorData), SetName(prefix), SetValue(original)))
+		if thisTypeSize != 0 {
+			*ret = append(*ret, *ConstructPrintFormatT(SetPosition(saveUpperFloorData), SetName(prefix), SetValue(original)))
+		}
 	}
 
 }
