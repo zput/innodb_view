@@ -1,57 +1,53 @@
-
-#  Viewing about physical file page structure for mysql innodb engine
+# 查看关于mysql innodb引擎的物理文件页面结构
 
 [![LICENSE](https://img.shields.io/badge/LICENSE-MIT-blue)](https://github.com/zput/innodb_view/blob/master/LICENSE)
 [![Github Actions](https://github.com/zput/innodb_view/workflows/CI/badge.svg)](https://github.com/zput/innodb_view/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/zput/innodb_view)](https://goreportcard.com/report/github.com/zput/innodb_view)
 [![GoDoc](https://godoc.org/github.com/zput/innodb_view?status.svg)](https://godoc.org/github.com/zput/innodb_view)
 
+#### 中文 | [English](README.md)
 
-#### [中文](README-ZH.md) | English
+[1. 特点](#1-特点)
 
-[1. Features](#1-features)
+[2. 背景](#2-背景)
 
-[2. Background](#2-background)
+[3. 前置需求](#3-前置需求)
 
-[3. Prerequisites](#3-prerequisites)
+[4. 安装](#4-安装)
 
-[4. Install](#4-quickstart)
+[5. 快速开始](#5-快速开始)
 
-[5. Quick Start](#5-quickstart)
+[6. 命令行参数讲解](#6-命令行参数讲解)
 
-[6. Command-line tool](#6-command-line-tool)
+[7. 附录](#7-附录)
 
-[7. Appendix](#7-appendix)
+Innodb_view是一个直接访问MySQL InnoDB存储引擎文件的Golang实现。
+通过命令行可以遍历所有已经使用的页，分析每个页的类型; 分析Inode page页面组成。
+Index page页面的组成等。此外，这个项目对学习MySQL innodb 物理页面是如何组成的很有用。
+         
+## 1. 特点
 
-Innodb_view is a Golang implementation for direct access to MySQL InnoDB storage engine files.
-The command line allows you to iterate through all the pages that have been used, analyze the type of each page; analyze the Inode page page composition.
-Index page page composition, etc. In addition, this project is useful for learning how MySQL innodb physical pages are composed.
+- 可遍历所有已经使用的页，分析每个页的类型; 
+- 分析Inode page页面组成。
+- 分析Index page页面的组成等
 
-## 1. Features
+## 2. 背景
 
-- It is possible to iterate through all the pages that have been used and analyze the type of each page; 
-- Analyze the composition of Inode page pages.
-- Analyze the composition of Index page pages, etc.
+学习Innodb的底层知识的时候，想要一种工具把，磁盘中文件页的结构可视化的打印出来，方便学习理解。
 
+## 3. 前置需求
 
-## 2. Background
+- 支持的MySQL版本：5.6, 5.7, 8.0。
+- 启用 innodb_file_per_table ，它将为每个表创建独立的 *.ibd 文件。
+- InnoDB文件页面大小设置为16K。
 
-When learning the underlying knowledge of Innodb, I would like a tool to print out the structure of the file pages on disk visually to facilitate learning and understanding.
-
-
-## 3. Prerequisites
-
-- Supported MySQL versions: 5.6, 5.7, 8.0.
-- Enable innodb_file_per_table, which will create separate *.ibd files for each table.
-- InnoDB file page size is set to 16K.
-
-## 4. Install
+## 4. 安装
 
 ```bash
 go get -u github.com/zput/innodb_view
 ```
 
-## 5. Quick Start
+## 5. 快速开始
 
 
 - SCAN
@@ -225,7 +221,7 @@ page number:[0]; page type:[Freshly allocated page]
 
 </details>
 
-## 6. Command-line tool
+## 6. 命令行参数讲解
 
 ```sh
 ➜  test git:(develop) ✗ ./innodb_view -h
@@ -237,6 +233,6 @@ Usage of ./innodb_view:
   -s, --page_size int         page size:(16/32 etc) (default 16)
  ```
 
-## 7. Appendix
+## 7. 附录
 
-welcome pr
+欢迎PR
