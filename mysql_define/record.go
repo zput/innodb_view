@@ -6,15 +6,14 @@ package mysql_define
  * in addition to the data and the offsets */
 const REC_N_NEW_EXTRA_BYTES = 5 //new-style记录扩展字节
 
-const InfoFlagsPlusNOwned = 1 // 1 byte
+const InfoFlagsPlusNOwned = 1  // 1 byte
 const HeapNoPlusRecordType = 2 // 2 byte
-const NextRecord = 2 // 2 byte
-
+const NextRecord = 2           // 2 byte
 
 /* Record status values */
 const REC_STATUS_ORDINARY = 0 // 普通记录
 const REC_STATUS_NODE_PTR = 1 // 非叶子结点带指针
-const REC_STATUS_INFIMUM = 2 // Infimum
+const REC_STATUS_INFIMUM = 2  // Infimum
 const REC_STATUS_SUPREMUM = 3 // Supremum
 
 /* The following four constants are needed in page0zip.cc in order to
@@ -46,8 +45,6 @@ const PAGE_NEW_SUPREMUM_END = (PAGE_NEW_SUPREMUM + 8)
 
 /* offset of the page supremum record end on
  *                                 a new-style compact page */
-
-
 
 //------------------------** 6.PAGE DIRECTORY **/ ------------------------------------
 

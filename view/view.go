@@ -136,15 +136,15 @@ func (v *View) ScanPage() error {
 
 }
 
-func (v *View) ParsePage(pageNo int) error{
+func (v *View) ParsePage(pageNo int) error {
 	// 1. check sum value, judge this page whether is correct.
 	// 2. file header, file trailer
 	// 3. file body {manger page, inode page, index page, freshly allocated page}
 
-	var(
-		err error
+	var (
+		err         error
 		fileAllPage IPageParse
-		pageObject IPageParse
+		pageObject  IPageParse
 	)
 
 	err = v.readAtPageNo(pageNo)
@@ -162,18 +162,16 @@ func (v *View) ParsePage(pageNo int) error{
 	}
 	fileAllPage.PageParseFILHeader(v.buf)
 
-
 	log.Debugf("ready parse [%s]", mysql_define.StatusText(fileAllPage.GetFileType()))
 
 	if pageObject = new(PageParseFactory).Create(fileAllPage.GetFileType()); pageObject == nil {
 		return ErrPageParseFactory
 	}
 
+	pageObject.PageParseFILHeader(v.buf)
 	pageObject.PageParseBody(v.buf, v.pageSize)
+	pageObject.PageParseFILTailer(v.buf, v.pageSize)
 	pageObject.PrintPageType()
 
 	return nil
 }
-
-
-

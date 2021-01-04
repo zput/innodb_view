@@ -3,9 +3,8 @@ package mysql_define
 const PAGE_HEADER = FIL_PAGE_DATA /* index page header starts at this
    offset(除了页面的fil_header) */
 
-
 const INDEX_PAGE_HEADER_SIZE = 36
-const FSEG_HEADER_TOTAL_SIZE = 2*FSEG_HEADER_SIZE
+const FSEG_HEADER_TOTAL_SIZE = 2 * FSEG_HEADER_SIZE
 
 const INDEX_PAGE_BEFORE_RECORD = FIL_PAGE_DATA + INDEX_PAGE_HEADER_SIZE + FSEG_HEADER_TOTAL_SIZE
 
@@ -57,7 +56,6 @@ const FSEG_HDR_OFFSET = 8  /*!< byte offset of the inode */
 
 const FSEG_HEADER_SIZE = 10 /*!< Length of the file system
   header, in bytes */
-
 
 // ??? TODO
 const PAGE_BTR_IBUF_FREE_LIST = PAGE_BTR_SEG_LEAF

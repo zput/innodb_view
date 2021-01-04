@@ -4,87 +4,80 @@ import (
 	"fmt"
 	"github.com/zput/innodb_view/log"
 	"github.com/zput/innodb_view/mysql_define"
+	"github.com/zput/innodb_view/print"
 	"github.com/zput/ringbuffer"
-	"gopkg.in/yaml.v2"
+	//"gopkg.in/yaml.v2"
+	"github.com/naoina/toml"
 )
 
-type IndexPage struct{
-	FileAllPage `yaml:"FileAllPage"`
+type IndexPage struct {
+	FileAllPage `yaml:"FileAllPage" self:"FileAllPage"`
 
-	NDirSlots uint16  `yaml:"NDirSlots"`
-	HeapTop uint16 `yaml:"HeapTop"`
-	NHeap uint16 `yaml:"NHeap"`
-	Free uint16 `yaml:"Free"`
-	Garbage uint16 `yaml:"Garbage"`
-	LastInsert uint16 `yaml:"LastInsert"`
-	Direction uint16 `yaml:"Direction"`
-	NDirection uint16 `yaml:"NDirection"`
-	NRecs uint16 `yaml:"NRecs"`
-	MaxTrxID uint64 `yaml:"MaxTrxID"`
-	Level uint16 `yaml:"Level"`
-	IndexID uint64 `yaml:"IndexID"`
+	IndexHeader `yaml:"IndexHeader" self:"IndexHeader"`
+	FSegHeader  `yaml:"FSegHeader" self:"FSegHeader"`
 
-	LeafNode *TreeNode  `yaml:"LeafNode"`
-	NoLeafNode *TreeNode `yaml:"NoLeafNode"`
-
-	RecordSlice []*Record `yaml:"RecordSlice"`
-	PageDirectorySlice []PageDirectoryElement `yaml:"PageDirectorySlice"`
+	IndexRecord `yaml:"IndexRecord" self:"IndexRecord"`
 }
 
-type Record struct{
+type IndexHeader struct {
+	NDirSlots  uint16 `yaml:"NDirSlots" self:"NDirSlots"`
+	HeapTop    uint16 `yaml:"HeapTop" self:"HeapTop"`
+	NHeap      uint16 `yaml:"NHeap" self:"NHeap"`
+	Free       uint16 `yaml:"Free" self:"Free"`
+	Garbage    uint16 `yaml:"Garbage" self:"Garbage"`
+	LastInsert uint16 `yaml:"LastInsert" self:"LastInsert"`
+	Direction  uint16 `yaml:"Direction" self:"Direction"`
+	NDirection uint16 `yaml:"NDirection" self:"NDirection"`
+	NRecs      uint16 `yaml:"NRecs" self:"NRecs"`
+	MaxTrxID   uint64 `yaml:"MaxTrxID" self:"MaxTrxID"`
+	Level      uint16 `yaml:"Level" self:"Level"`
+	IndexID    uint64 `yaml:"IndexID" self:"IndexID"`
+}
+
+type FSegHeader struct {
+	LeafNode   *TreeNode `yaml:"LeafNode" self:"LeafNode"`
+	NoLeafNode *TreeNode `yaml:"NoLeafNode" self:"NoLeafNode"`
+}
+
+type IndexRecord struct {
+	RecordSlice        []*Record              `yaml:"RecordSlice" self:"RecordSlice"`
+	PageDirectorySlice []PageDirectoryElement `yaml:"PageDirectorySlice" self:"PageDirectorySlice"`
+}
+
+type Record struct {
 	// Variable field lengths(1-2 bytes per var.field) //不定长
 	// Nullable field bitmap (1bit per nullable field) //不定长
 
 	// ------------- 5 byte always ------------------------
-	InfoFlags InfoFlagsT `yaml:"InfoFlags"` // 4 bits
-	NOwned uint8 `yaml:"NOwned"`// 4 bits
-	HeapNoIsOrder uint16 `yaml:"HeapNoIsOrder"`// 13 bits
-	RecordType uint16 `yaml:"RecordType"`// 3 bits
-	NextRecordOffsetRelative int16 `yaml:"NextRecordOffsetRelative"`// 2 byte
+	InfoFlags                InfoFlagsT `yaml:"InfoFlags" self:"InfoFlags,4"`                             // 4 bits
+	NOwned                   uint8      `yaml:"NOwned" self:"NOwned,4"`                                   // 4 bits
+	HeapNoIsOrder            uint16     `yaml:"HeapNoIsOrder" self:"HeapNoIsOrder,13"`                    // 13 bits
+	RecordType               uint16     `yaml:"RecordType" self:"RecordType,3"`                           // 3 bits
+	NextRecordOffsetRelative int16      `yaml:"NextRecordOffsetRelative" self:"NextRecordOffsetRelative"` // 2 byte
 }
 
 type InfoFlagsT struct {
 	// total (4 bits)
 	// saved flag // 1 bit
 	// saved flag // 1 bit
-	DelFlag uint8 `yaml:"DelFlag"`// 1 bit
-	MinFlag uint8 `yaml:"MinFlag"`// 1 bit
+	SaveFlag1 uint8 `yaml:"SaveFlag1" self:"SaveFlag1,1"` // 1 bit
+	SaveFlag2 uint8 `yaml:"SaveFlag2" self:"SaveFlag2,1"` // 1 bit
+	DelFlag   uint8 `yaml:"DelFlag" self:"DelFlag,1"`     // 1 bit
+	MinFlag   uint8 `yaml:"MinFlag" self:"MinFlag,1"`     // 1 bit
 }
 
-type PageDirectoryElement struct{
-	DirectorySlot uint16 `yaml:"DirectorySlot"` // 2 byte
+type PageDirectoryElement struct {
+	DirectorySlot uint16 `yaml:"DirectorySlot" self:"DirectorySlot"` // 2 byte
 
-	NOwned uint8 `yaml:"NOwned"`// 此处物理没有对应的。它实际在record里面
+	NOwned uint8 `yaml:"NOwned" self:"NOwned,0"` // 此处物理没有对应的。它实际在record里面
 }
 
-func (ip *IndexPage) GetFileType()mysql_define.T_FIL_PAGE_TYPE{
-	return mysql_define.T_FIL_PAGE_TYPE(ip.FileAllPage.pageType)
-}
-
-func (ip *IndexPage) printPageType() error {
-	//prettyFormat, err := json.MarshalIndent(ip, "", "    ")
-	prettyFormat, err := yaml.Marshal(ip)
-	if err != nil{
-		return err
-	}
-	fmt.Printf("%s\n", string(prettyFormat))
-	return nil
-}
-
-func (ip *IndexPage) PrintPageType() error {
-	ip.printPageType()
-
-	if err := ip.FileAllPage.PrintPageType(); err != nil{
-		log.Error(err)
-		return err
-	}
-
-
-	return nil
+func (ip *IndexPage) GetFileType() mysql_define.T_FIL_PAGE_TYPE {
+	return mysql_define.T_FIL_PAGE_TYPE(ip.FileAllPage.PageType)
 }
 
 func (ip *IndexPage) PageParseFILHeader(buffer *ringbuffer.RingBuffer) error {
-	if err := ip.FileAllPage.PageParseFILHeader(buffer); err != nil{
+	if err := ip.FileAllPage.PageParseFILHeader(buffer); err != nil {
 		return err
 	}
 
@@ -92,7 +85,7 @@ func (ip *IndexPage) PageParseFILHeader(buffer *ringbuffer.RingBuffer) error {
 }
 
 func (ip *IndexPage) PageParseFILTailer(buffer *ringbuffer.RingBuffer, pageSize mysql_define.PAGE_SIZE) error {
-	if err := ip.FileAllPage.PageParseFILTailer(buffer, pageSize); err != nil{
+	if err := ip.FileAllPage.PageParseFILTailer(buffer, pageSize); err != nil {
 		return err
 	}
 
@@ -183,19 +176,19 @@ func (ip *IndexPage) PageParseBody(buffer *ringbuffer.RingBuffer, pageSize mysql
 		return err
 	}
 
-	if ip.NoLeafNode, err = getTreeNode(buffer); err != nil{
+	if ip.NoLeafNode, err = getTreeNode(buffer); err != nil {
 		log.Error(err)
 		return err
 	}
 
 	buffer.ExploreBreak()
 
-	if err = ip.parsePageDirectorySlot(buffer, pageSize); err != nil{
+	if err = ip.parsePageDirectorySlot(buffer, pageSize); err != nil {
 		log.Error(err)
 		return err
 	}
 
-	if err = ip.parseRecords(buffer, pageSize); err != nil{
+	if err = ip.parseRecords(buffer, pageSize); err != nil {
 		log.Error(err)
 		return err
 	}
@@ -203,17 +196,18 @@ func (ip *IndexPage) PageParseBody(buffer *ringbuffer.RingBuffer, pageSize mysql
 	return nil
 }
 
+// --------------- inner method function ----------------- //
 func (ip *IndexPage) parsePageDirectorySlot(buffer *ringbuffer.RingBuffer, pageSize mysql_define.PAGE_SIZE) error {
 	var isUsingExplore = true
 	var err error
 
 	buffer.ExploreBegin()
-	if err := buffer.ExploreRetrieve(int(pageSize)-mysql_define.PAGE_DIR-int(ip.NDirSlots)*mysql_define.PAGE_DIR_SLOT_SIZE); err != nil {
+	if err := buffer.ExploreRetrieve(int(pageSize) - mysql_define.PAGE_DIR - int(ip.NDirSlots)*mysql_define.PAGE_DIR_SLOT_SIZE); err != nil {
 		log.Error(err)
 		return err
 	}
 
-	for i:=int(ip.NDirSlots); i>0; i--{
+	for i := int(ip.NDirSlots); i > 0; i-- {
 		var pageDirectoryElement PageDirectoryElement
 		pageDirectoryElement.DirectorySlot = buffer.PeekUint16(isUsingExplore)
 		if err = buffer.ExploreRetrieve(mysql_define.PAGE_DIR_SLOT_SIZE); err != nil {
@@ -225,13 +219,13 @@ func (ip *IndexPage) parsePageDirectorySlot(buffer *ringbuffer.RingBuffer, pageS
 
 	buffer.ExploreBreak()
 
-	for index := range ip.PageDirectorySlice{
+	for index := range ip.PageDirectorySlice {
 		buffer.ExploreBegin()
-		if err := buffer.ExploreRetrieve(int(ip.PageDirectorySlice[index].DirectorySlot)-mysql_define.REC_N_NEW_EXTRA_BYTES); err != nil {
+		if err := buffer.ExploreRetrieve(int(ip.PageDirectorySlice[index].DirectorySlot) - mysql_define.REC_N_NEW_EXTRA_BYTES); err != nil {
 			log.Error(err)
 			return err
 		}
-		ip.PageDirectorySlice[index].NOwned = buffer.PeekUint8(isUsingExplore)&0x0F
+		ip.PageDirectorySlice[index].NOwned = buffer.PeekUint8(isUsingExplore) & 0x0F
 		buffer.ExploreBreak()
 	}
 
@@ -246,11 +240,11 @@ func (ip *IndexPage) parseRecords(buffer *ringbuffer.RingBuffer, pageSize mysql_
 
 	// get infimum record
 	buffer.ExploreBegin()
-	if err := buffer.ExploreRetrieve(int(offset-mysql_define.REC_N_NEW_EXTRA_BYTES)); err != nil {
+	if err := buffer.ExploreRetrieve(int(offset - mysql_define.REC_N_NEW_EXTRA_BYTES)); err != nil {
 		log.Error(err)
 		return err
 	}
-	if recordPtr, err = getRecord(buffer, isUsingExplore); err != nil{
+	if recordPtr, err = getRecord(buffer, isUsingExplore); err != nil {
 		log.Error(err)
 		return err
 	}
@@ -260,22 +254,75 @@ func (ip *IndexPage) parseRecords(buffer *ringbuffer.RingBuffer, pageSize mysql_
 
 	for {
 		buffer.ExploreBegin()
-		if err := buffer.ExploreRetrieve(int(offset-mysql_define.REC_N_NEW_EXTRA_BYTES)); err != nil {
+		if err := buffer.ExploreRetrieve(int(offset - mysql_define.REC_N_NEW_EXTRA_BYTES)); err != nil {
 			log.Error(err)
 			return err
 		}
-		if recordPtr, err = getRecord(buffer, isUsingExplore); err != nil{
+		if recordPtr, err = getRecord(buffer, isUsingExplore); err != nil {
 			log.Error(err)
 			return err
 		}
 		ip.RecordSlice = append(ip.RecordSlice, recordPtr)
 		buffer.ExploreBreak()
 
-		if recordPtr.NextRecordOffsetRelative == 0{
+		if recordPtr.NextRecordOffsetRelative == 0 {
 			log.Debugf("IndexPage.parseRecords; all record have found in this page")
 			break
 		}
 		offset += recordPtr.NextRecordOffsetRelative
 	}
+	return nil
+}
+
+func (ip *IndexPage) printPageType() error {
+	//prettyFormat, err := json.MarshalIndent(ip, "", "    ")
+	//prettyFormat, err := yaml.Marshal(ip)
+	prettyFormat, err := toml.Marshal(ip)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%s\n", string(prettyFormat))
+	return nil
+}
+
+func (ip *IndexPage) generateHumanFormat() []print.PrintFormatT {
+	var waitPrintT []print.PrintFormatT
+	var currentPosition int
+
+	waitPrintT = append(waitPrintT, ip.FileAllPage.generateHumanFormatHeader()...)
+
+	waitPrintT = append(waitPrintT, *print.NewPrintFormatT(print.PrintDivideSignBlock, "index page:index header"))
+	currentPosition = mysql_define.FIL_PAGE_DATA
+	currentPosition *= 8
+	waitPrintT = append(waitPrintT, print.Translate(&currentPosition, ip.IndexHeader)...)
+
+	waitPrintT = append(waitPrintT, *print.NewPrintFormatT(print.PrintDivideSignBlock, "index page:FSEG header"))
+	currentPosition = mysql_define.FIL_PAGE_DATA + mysql_define.INDEX_PAGE_HEADER_SIZE
+	currentPosition *= 8
+	waitPrintT = append(waitPrintT, print.Translate(&currentPosition, ip.FSegHeader)...)
+
+	waitPrintT = append(waitPrintT, *print.NewPrintFormatT(print.PrintDivideSignBlock, "index page:All records"))
+	currentPosition = mysql_define.INDEX_PAGE_BEFORE_RECORD
+	currentPosition *= 8
+	waitPrintT = append(waitPrintT, print.Translate(&currentPosition, ip.IndexRecord)...)
+
+	waitPrintT = append(waitPrintT, ip.FileAllPage.generateHumanFormatTrailer()...)
+
+	return waitPrintT
+}
+
+func (ip *IndexPage) PrintPageType() error {
+
+	fmt.Printf("%s\n", print.PrintFun(ip.generateHumanFormat()))
+
+	fmt.Println()
+
+	//ip.printPageType()
+
+	if err := ip.FileAllPage.PrintPageType(); err != nil {
+		log.Error(err)
+		return err
+	}
+
 	return nil
 }
