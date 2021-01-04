@@ -24,8 +24,8 @@
 [7. Appendix](#7-appendix)
 
 Innodb_view is a Golang implementation for direct access to MySQL InnoDB storage engine files.
-The command line allows you to iterate through all the pages that have been used, analyze the type of each page; analyze the Inode page page composition.
-Index page page composition, etc. In addition, this project is useful for learning how MySQL innodb physical pages are composed.
+The command line allows you to iterate through all the pages that have been used, analyze the type of each page; analyze the Inode page page composition;
+Index page page composition, etc. In addition, this project can deepen the understanding of the internal structure of MySQL innodb physical pages.
 
 ## 1. Features
 

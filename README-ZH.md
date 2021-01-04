@@ -22,8 +22,8 @@
 [7. 附录](#7-附录)
 
 Innodb_view是一个直接访问MySQL InnoDB存储引擎文件的Golang实现。
-通过命令行可以遍历所有已经使用的页，分析每个页的类型; 分析Inode page页面组成。
-Index page页面的组成等。此外，这个项目对学习MySQL innodb 物理页面是如何组成的很有用。
+通过命令行可以遍历所有已经使用的页，分析每个页的类型; 分析Inode page页面组成;
+Index page页面的组成等。此外，这个项目可加深对MySQL innodb物理页面内部结构理解。
          
 ## 1. 特点
 

@@ -34,7 +34,7 @@ var ErrFileReadLength = errors.New("read length from file")
 
 var ErrRingBufferWrite = errors.New("write to ringbuffer")
 var ErrRingBufferRead = errors.New("read from ringbuffer")
-var ErrRingBufferReadLength = errors.New("read lenght from ringbuffer")
+var ErrRingBufferReadLength = errors.New("read length from ringbuffer")
 
 var ErrPageParseFactory = errors.New("PageParseFactory error")
 
