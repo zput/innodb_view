@@ -4,53 +4,37 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/zput/innodb_view/log"
+	"github.com/zput/innodb_view/print"
 	"github.com/zput/innodb_view/mysql_define"
 	"github.com/zput/ringbuffer"
 )
 
 // ----------------- FspHeaderPage ------------------------------------//
-
 type FspHeaderPage struct {
-	FileAllPage
-	FspSpaceID    uint32
-	FspNotUsed    uint32
-	FspSize       uint32
-	FspFreeLimit  uint32
-	FspSpaceFlags uint32
-	FspFragNUsed  uint32
+	FileAllPage `yaml:"FileAllPage" self:"FileAllPage"`
+	FspHeader `yaml:"FspHeader" self:"FspHeader"`
+}
 
-	FspFree     *ListBaseNode
-	FspFreeFrag *ListBaseNode
-	FspFullFrag *ListBaseNode
+type FspHeader struct {
+	FspSpaceID    uint32 `yaml:"FspSpaceID" self:"FspSpaceID"`
+	FspNotUsed    uint32 `yaml:"FspNotUsed" self:"FspNotUsed"`
+	FspSize       uint32 `yaml:"FspSize" self:"FspSize"`
+	FspFreeLimit  uint32 `yaml:"FspFreeLimit" self:"FspFreeLimit"`
+	FspSpaceFlags uint32 `yaml:"FspSpaceFlags" self:"FspSpaceFlags"`
+	FspFragNUsed  uint32 `yaml:"FspFragNUsed" self:"FspFragNUsed"`
 
-	FspSegID uint64
+	FspFree     *ListBaseNode `yaml:"FspFree" self:"FspFree"`
+	FspFreeFrag *ListBaseNode `yaml:"FspFreeFrag" self:"FspFreeFrag"`
+	FspFullFrag *ListBaseNode `yaml:"FspFullFrag" self:"FspFullFrag"`
 
-	FspSegInodesFull *ListBaseNode
-	FspSegInodesFree *ListBaseNode
+	FspSegID uint64 `yaml:"FspSegID" self:"FspSegID"`
+
+	FspSegInodesFull *ListBaseNode `yaml:"FspSegInodesFull" self:"FspSegInodesFull"`
+	FspSegInodesFree *ListBaseNode `yaml:"FspSegInodesFree" self:"FspSegInodesFree"`
 }
 
 func (fhp *FspHeaderPage) GetFileType() mysql_define.T_FIL_PAGE_TYPE {
 	return mysql_define.T_FIL_PAGE_TYPE(fhp.FileAllPage.PageType)
-}
-
-func (fhp *FspHeaderPage) printPageType() error {
-	prettyFormat, err := json.MarshalIndent(fhp, "", "    ")
-	if err != nil {
-		return err
-	}
-	fmt.Printf("%s", string(prettyFormat))
-	return nil
-}
-
-func (fhp *FspHeaderPage) PrintPageType() error {
-	fhp.printPageType()
-
-	if err := fhp.FileAllPage.PrintPageType(); err != nil {
-		log.Error(err)
-		return err
-	}
-
-	return nil
 }
 
 func (fhp *FspHeaderPage) PageParseFILHeader(buffer *ringbuffer.RingBuffer) error {
@@ -144,6 +128,53 @@ func (fhp *FspHeaderPage) PageParseBody(buffer *ringbuffer.RingBuffer, pageSize 
 	}
 
 	buffer.ExploreBreak()
+
+	return nil
+}
+
+// --------------- inner method function ----------------- //
+func (fhp *FspHeaderPage) printPageType() error {
+	prettyFormat, err := json.MarshalIndent(fhp, "", "    ")
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%s", string(prettyFormat))
+	return nil
+}
+
+func (fhp *FspHeaderPage) generateHumanFormat() []print.PrintFormatT {
+	var waitPrintT []print.PrintFormatT
+	var currentPosition int
+
+	waitPrintT = append(waitPrintT, fhp.FileAllPage.generateHumanFormatHeader()...)
+
+	waitPrintT = append(waitPrintT, *print.NewPrintFormatT(print.PrintDivideSignBlock, "index page:FSP header"))
+	currentPosition = mysql_define.FIL_PAGE_DATA
+	currentPosition *= 8
+	waitPrintT = append(waitPrintT, print.Translate(&currentPosition, fhp.FspHeader)...)
+
+	// TODO
+	//waitPrintT = append(waitPrintT, *print.NewPrintFormatT(print.PrintDivideSignBlock, "index page:entry(0-84)"))
+	//currentPosition = mysql_define.FIL_PAGE_DATA+mysql_define.FSEG_INODE_PAGE_NODE
+	//currentPosition *= 8
+	//waitPrintT = append(waitPrintT, print.Translate(&currentPosition, fhp.INodeEntrySlice)...)
+
+	waitPrintT = append(waitPrintT, fhp.FileAllPage.generateHumanFormatTrailer()...)
+
+	return waitPrintT
+}
+
+func (fhp *FspHeaderPage) PrintPageType() error {
+	fmt.Printf("%s\n", print.PrintFun(fhp.generateHumanFormat()))
+
+	fmt.Println()
+
+	//fhp.printPageType()
+
+	if err := fhp.FileAllPage.PrintPageType(); err != nil {
+		log.Error(err)
+		return err
+	}
 
 	return nil
 }

@@ -168,7 +168,9 @@ func (v *View) ParsePage(pageNo int) error {
 		return ErrPageParseFactory
 	}
 
+	pageObject.PageParseFILHeader(v.buf)
 	pageObject.PageParseBody(v.buf, v.pageSize)
+	pageObject.PageParseFILTailer(v.buf, v.pageSize)
 	pageObject.PrintPageType()
 
 	return nil

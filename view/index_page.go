@@ -317,7 +317,7 @@ func (ip *IndexPage) PrintPageType() error {
 
 	fmt.Println()
 
-	ip.printPageType()
+	//ip.printPageType()
 
 	if err := ip.FileAllPage.PrintPageType(); err != nil {
 		log.Error(err)
